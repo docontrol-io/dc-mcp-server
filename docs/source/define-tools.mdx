@@ -48,19 +48,23 @@ You can also use the `operations` option to specify a directory. The server then
 
 Files and directories specified with `operations` are hot reloaded. When you specify a file, the MCP tool is updated when the file contents are modified. When you specify a directory, operations exposed as MCP tools are updated when files are added, modified, or removed from the directory.
 
-### From an operation collection
+### From operation collections
 
-For graphs managed by GraphOS, Apollo MCP Server can get operations from an [operation collection](/graphos/platform/explorer/operation-collections).
+For graphs managed by GraphOS, Apollo MCP Server can retrieve operations from an [operation collection](/graphos/platform/explorer/operation-collections).
 
-To use a GraphOS operation collection, you must set your graph credentials `APOLLO_GRAPH_REF` and `APOLLO_KEY` as environment variables.
+Use GraphOS Studio Explorer to create and manage operation collections.
+
+#### Configuring the MCP Server to use a GraphOS operation collection
+
+To use a GraphOS operation collection, you must set your graph credentials (`APOLLO_GRAPH_REF` and `APOLLO_KEY`) as environment variables.
 
 Use the `operations.source: collection` option to specify that tools should be loaded from an operation collection.
 
 Specify the collection to use with the `operations.id` option. To view the ID of a collection, click the ••• button next to its entry, select **View details**, and copy the **Collection ID**.
 
-Each graph variant has its own default collection called **Default MCP Tools**. To use this default collection, specify `operations.id: default`.
+Each graph variant has its own default collection called **Default MCP Tools**. To use this default collection, specify `operations.id: default`. Apollo MCP Server automatically fetches the default collection if no ID is specified.
 
-```yaml title="Example config file for using the default MCP Tools operation collection"
+```yaml title="Example config file for using a GraphOS operation collection"
 operations:
   source: collection
   id: default
