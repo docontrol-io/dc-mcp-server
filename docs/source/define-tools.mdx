@@ -75,26 +75,11 @@ Set the persisted query manifest file for the MCP Server with the `operations` o
 
 An example manifest is available in the [GitHub repo](https://github.com/apollographql/apollo-mcp-server/tree/main/graphql/weather/persisted_queries).
 
-<ExpansionPanel title="Example command using --manifest">
-
-From the root of a local MCP Server repo, run the `apollo-mcp-server` binary with the example persisted query manifest, `graphql/weather/persisted_queries/apollo.json`:
-
-```yaml title="Example config for using Persisted Query Manifest"
-headers:
-  "apollographql-client-name": "my-web-app"
+```yaml title="Example config for using persisted query manifest"
 operations:
   source: manifest
-  path: <absolute path to this local repo>/graphql/weather/persisted_queries/apollo.json
-schema:
-  source: local
-  path: <absolute path to this local repo>/graphql/weather/api.graphql
+  path: <PATH/TO/persisted-queries-manifest.json>
 ```
-
-```sh showLineNumbers=false
-apollo-mcp-server <path to the preceding config>
-```
-
-</ExpansionPanel>
 
 ### From GraphOS-managed persisted queries
 
