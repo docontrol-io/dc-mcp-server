@@ -48,24 +48,25 @@ You can also use the `operations` option to specify a directory. The server then
 
 Files and directories specified with `operations` are hot reloaded. When you specify a file, the MCP tool is updated when the file contents are modified. When you specify a directory, operations exposed as MCP tools are updated when files are added, modified, or removed from the directory.
 
-### From Operation Collection
+### From an operation collection
 
-For graphs managed by GraphOS, Apollo MCP Server can get operations from an [Operation Collection](https://www.apollographql.com/docs/graphos/platform/explorer/operation-collections).
+For graphs managed by GraphOS, Apollo MCP Server can get operations from an [operation collection](/graphos/platform/explorer/operation-collections).
 
-To use a GraphOS Operation Collection, you must:
+To use a GraphOS operation collection, you must set your graph credentials `APOLLO_GRAPH_REF` and `APOLLO_KEY` as environment variables.
 
-- Set `APOLLO_GRAPH_REF` and `APOLLO_KEY` environment variables for a GraphOS graph
+Use the `operations.source: collection` option to specify that tools should be loaded from an operation collection.
 
-Each variant will have its own default MCP Tools Collection, but you can specify any shared collection by using `operations` with `operations.source: collection`.
-Apollo MCP Server automatically fetches the default collection if no ID is specified.
+Specify the collection to use with the `operations.id` option. To view the ID of a collection, click the ••• button next to its entry, select **View details**, and copy the **Collection ID**.
 
-```yaml title="Example config file for using a GraphOS Operation Collection"
+Each graph variant has its own default collection called **MCP Tools**. To use this default collection, specify `operations.id: default`.
+
+```yaml title="Example config file for using the default MCP Tools operation collection"
 operations:
   source: collection
-  id: <collection-id>
+  id: default
 ```
 
-The MCP Server supports hot reloading of the GraphOS Operation Collection, so it can automatically pick up changes from GraphOS without restarting.
+The MCP Server supports hot reloading of the GraphOS operation collection, so it can automatically pick up changes from GraphOS without restarting.
 
 ### From persisted query manifests
 
