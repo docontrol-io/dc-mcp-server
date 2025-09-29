@@ -48,25 +48,58 @@ You can also use the `operations` option to specify a directory. The server then
 
 Files and directories specified with `operations` are hot reloaded. When you specify a file, the MCP tool is updated when the file contents are modified. When you specify a directory, operations exposed as MCP tools are updated when files are added, modified, or removed from the directory.
 
-### From an operation collection
+### From operation collections
 
-For graphs managed by GraphOS, Apollo MCP Server can get operations from an [operation collection](/graphos/platform/explorer/operation-collections).
+For graphs managed by GraphOS, Apollo MCP Server can retrieve operations from an [operation collection](/graphos/platform/explorer/operation-collections).
 
-To use a GraphOS operation collection, you must set your graph credentials `APOLLO_GRAPH_REF` and `APOLLO_KEY` as environment variables.
+Use GraphOS Studio Explorer to create and manage operation collections.
 
-Use the `operations.source: collection` option to specify that tools should be loaded from an operation collection.
+#### Configuring the MCP Server to use a GraphOS operation collection
+
+To use a GraphOS operation collection, you must set your graph credentials (`APOLLO_GRAPH_REF` and `APOLLO_KEY`) as environment variables.
+
+Each graph variant has its own default MCP Tools Collection, but you can specify any shared collection by using `operations.source: collection`.
 
 Specify the collection to use with the `operations.id` option. To view the ID of a collection, click the ••• button next to its entry, select **View details**, and copy the **Collection ID**.
 
-Each graph variant has its own default collection called **Default MCP Tools**. To use this default collection, specify `operations.id: default`.
+Each graph variant has its own default collection called **Default MCP Tools**. To use this default collection, specify `operations.id: default`. Apollo MCP Server automatically fetches the default collection if no ID is specified.
 
-```yaml title="Example config file for using the default MCP Tools operation collection"
+```yaml title="Example config file for using a GraphOS operation collection"
 operations:
   source: collection
   id: default
 ```
 
-The MCP Server supports hot reloading of the GraphOS operation collection, so it can automatically pick up changes from GraphOS without restarting.
+The MCP Server supports hot reloading of the GraphOS operation collection, so it automatically picks up changes from GraphOS without restarting.
+
+#### Setting operation collection variables
+
+When saving operation collections, remove any dynamic variables from the **Variables** panel of Explorer. This enables the LLM to modify the variables when calling the operation.
+
+Any variables set to any valid value (even `null`) in the Variables panel of a saved operation are used as a hardcoded override for that operation's variable.
+
+For example, if you create the following operation for an operation collection:
+
+```graphql
+query GetProduct($productId: ID!) {
+  product(id: $productId) {
+    id
+    description
+  }
+}
+```
+
+And the Variables panel has `productId` set to `1234`:
+
+```json
+{
+  "productId": "1234"
+}
+```
+
+Then, every time the LLM calls the `GetProduct` operation, the `productId` variable is always set to `1234`. The same is true if `productId` is set to `null`.
+
+If you want to use dynamic variables that the LLM can modify, remove any variables from the Variables panel and save that operation to the collection.
 
 ### From persisted query manifests
 
@@ -140,6 +173,7 @@ Both the `introspect` and `search` tools support minification of their results t
 
 - **Type prefixes**: `T=type`, `I=input`, `E=enum`, `U=union`, `F=interface`
 - **Scalar abbreviations**: `s=String`, `i=Int`, `f=Float`, `b=Boolean`, `d=ID`
+- **Directive abbreviations**: `@D=deprecated`
 - **Type modifiers**: `!=required`, `[]=list`, `<>=implements`
 
 Example comparison:
