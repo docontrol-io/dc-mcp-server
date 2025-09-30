@@ -118,10 +118,6 @@ telemetry:
         - request_id
 ```
 
-### Configuration for disabling authorization token passthrough - @swcollard PR #336
-
-A new optional new MCP Server configuration parameter, `transport.auth.disable_auth_token_passthrough`, which is `false` by default, that when true, will no longer pass through validated Auth tokens to the GraphQL API.
-
 ### Adding config option for trace sampling - @alocay PR #366
 
 Adding configuration option to sample traces. Can use the following options:
@@ -162,25 +158,9 @@ We've been seeing errors with state and session handling in the MCP Server. Whet
 
 ## 🛠 Maintenance
 
-### Update RMCP dependency - @nicholascioli PR #328
-
-Update the RMCP dependency to the latest version, pulling in newer specification changes.
-
-### Pin stable rust version - @nicholascioli PR #287
-
-Pins the stable version of Rust to the current latest version to ensure backwards compatibility with future versions.
-
 ### Add tests for server event and SupergraphSdlQuery - @DaleSeo PR #347
 
 This PR adds tests for some uncovered parts of the codebase to check the Codecov integration.
-
-### Configure Codecov with coverage targets - @DaleSeo PR #337
-
-This PR adds `codecov.yml` to set up Codecov with specific coverage targets and quality standards. It helps define clear expectations for code quality. It also includes some documentation about code coverage in `CONTRIBUTING.md` and adds the Codecov badge to `README.md`.
-
-### Implement Test Coverage Measurement and Reporting - @DaleSeo PR #335
-
-This PR adds the bare minimum for code coverage reporting using [cargo-llvm-cov](https://crates.io/crates/cargo-llvm-cov) and integrates with [Codecov](https://www.codecov.io/). It adds a new `coverage` job to the CI workflow that generates and uploads coverage reporting in parallel with existing tests. The setup mirrors that of Router, except it uses `nextest` instead of the built-in test runner and CircleCI instead of GitHub Actions.
 
 ### Fix version on mcp server tester - @alocay PR #374
 
