@@ -48,7 +48,7 @@ impl Operation {
         self.inner
     }
 
-    #[tracing::instrument(skip(graphql_schema, custom_scalar_map))]
+    #[tracing::instrument(skip_all, name = "load_tool")]
     pub fn from_document(
         raw_operation: RawOperation,
         graphql_schema: &GraphqlSchema,

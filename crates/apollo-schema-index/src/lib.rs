@@ -119,6 +119,7 @@ pub struct SchemaIndex {
 }
 
 impl SchemaIndex {
+    #[tracing::instrument(skip_all, name = "schema_index")]
     pub fn new(
         schema: &Valid<Schema>,
         root_types: EnumSet<OperationType>,
