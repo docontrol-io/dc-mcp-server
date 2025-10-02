@@ -20,7 +20,7 @@ This getting started guide will walk you through the process of creating, runnin
 - [Node.js](https://nodejs.org/) v18 or later (for mcp-remote)
 - [Claude Desktop](https://claude.ai/download) or another MCP-compatible client
 
-## Step 1: Create an MCP Server
+## Step 1: Create an MCP server
 
 [Rover](https://www.apollographql.com/docs/rover) is the fastest way to create an Apollo MCP Server is using `rover init --mcp`. This command creates a complete project with:
 
@@ -39,7 +39,7 @@ rover config auth
 
 This opens your browser to create a personal API key. If you don't have an Apollo account, you'll be prompted to create one.
 
-### Initialize Your MCP Project
+### Initialize your MCP project
 
 Run the interactive initialization command:
 
@@ -65,34 +65,16 @@ The CLI wizard will guide you through several prompts:
 
 4. Review and confirm
 
-The wizard shows all files that will be created:
+The wizard shows all files that will be created, including:
 
 ```bash
-MCP Server: Config, sample tools and tests
-- claude_desktop_config.json
-- mcp.Dockerfile (optional Docker container)
-- mcpconfig/mcp.local.yaml
-- mcpconfig/mcp.staging.yaml
-
-Apollo GraphOS: Graph credentials and project files
-- apollo.config.yaml
-- schema.graphql
-- supergraph.yaml
-- .env
-
-IDE: Project settings
-- .gitignore
-- .idea/
-- .vscode/
-- tasks.json
-
-Guides and references
-- GETTING_STARTED.md
-- MCP_README.md
-- AGENTS.md
+- MCP server configuration files
+- GraphQL schema and operations
+- Client configuration (Claude Desktop, etc.)
+- Docker setup for (optional) deployment 
 ```
 
-Type `Y` to confirm and create your project - your MCP server will be initialized and ready for next steps.
+Type `Y` to confirm and create your project. Your MCP server will be initialized and ready for next steps.
 
 
 ## Step 2: Run Your MCP Server
@@ -126,7 +108,7 @@ Now that your project is created, you can start your MCP server locally with `ro
 You should see:
 
 ```
-✓ MCP server running at http://localhost:5050
+✓ MCP server running at http://localhost:5000
 ✓ GraphQL API running at http://localhost:4000
 ```
 
@@ -138,19 +120,17 @@ Alternatively, you can also run the Apollo MCP Server via Docker, Apollo Runtime
 Before connecting Claude, verify your MCP server is working:
 
 ```terminal
-npx @modelcontextprotocol/inspector
+npx @modelcontextprotocol/inspector http://127.0.0.1:5000/mcp --transport http
 ```
 
 1. Open your browser to `http://127.0.0.1:6274`
-2. Select **Streamable HTTP** as the Transport Type
-3. Enter `http://127.0.0.1:5050/mcp` as the URL
-4. Click **Connect**, then **List Tools**
+2. Click **Connect**, then **List Tools**
 
 You should see your GraphQL operations listed as MCP tools.
 
 ## Step 3: Connect to Claude Desktop
 
-Apollo MCP Server works with **any** MCP-compatible client - add the generated initial`config.json` to the AI application of your choosing:
+Apollo MCP Server works with **any** MCP-compatible client - add the generated initial `config.json` to the AI application of your choosing:
 
 <details>
 <summary>Claude Desktop</summary>
@@ -176,7 +156,7 @@ cp claude_desktop_config.json ~/.config/Claude/claude_desktop_config.json
 Install using the CLI:
 
 ```bash
-claude mcp add apollo-mcp npx mcp-remote http://127.0.0.1:5050/mcp
+claude mcp add apollo-mcp npx mcp-remote http://127.0.0.1:5000/mcp
 ```
 </details>
 <details>
@@ -191,7 +171,7 @@ Or install manually:
 1. Go to **Cursor Settings** → **MCP** → **Add new MCP Server**
 2. Name: `Apollo MCP` (choose a title)
 3. Command: `npx`
-4. Arguments: `["mcp-remote", "http://127.0.0.1:5050/mcp"]`
+4. Arguments: `["mcp-remote", "http://127.0.0.1:5000/mcp"]`
 </details>
 
 <details>
@@ -213,13 +193,13 @@ default:
           command: npx
           args:
             - mcp-remote
-            - http://127.0.0.1:5050/mcp
+            - http://127.0.0.1:5000/mcp
 ```
 
 Or use the Goose CLI to add the MCP server:
 
 ```bash
-goose mcp add apollo-mcp npx mcp-remote http://127.0.0.1:5050/mcp
+goose mcp add apollo-mcp npx mcp-remote http://127.0.0.1:5000/mcp
 ```
 </details>
 <details>
@@ -228,7 +208,7 @@ goose mcp add apollo-mcp npx mcp-remote http://127.0.0.1:5050/mcp
 1. Go to **Advanced settings** → **Extensions** → **Add custom extension**
 2. Name: `Apollo MCP`
 3. Type: **STDIO**
-4. Command: `npx mcp-remote http://127.0.0.1:5050/mcp`
+4. Command: `npx mcp-remote http://127.0.0.1:5000/mcp`
 </details>
 <details>
 <summary>OpenCode</summary>
@@ -244,7 +224,7 @@ Edit `~/.config/opencode/opencode.json`:
       "command": [
         "npx",
         "mcp-remote",
-        "http://127.0.0.1:5050/mcp"
+        "http://127.0.0.1:5000/mcp"
       ],
       "enabled": true
     }
@@ -258,7 +238,7 @@ Edit `~/.config/opencode/opencode.json`:
 Go to **Windsurf Settings → MCP → Add new MCP Server**
 Name: `Apollo MCP`
 Command: `npx`
-Arguments: `["mcp-remote", "http://127.0.0.1:5050/mcp"]`
+Arguments: `["mcp-remote", "http://127.0.0.1:5000/mcp"]`
 
 Alternatively, edit your Windsurf configuration file directly:
 
@@ -269,7 +249,7 @@ Alternatively, edit your Windsurf configuration file directly:
       "command": "npx",
       "args": [
         "mcp-remote",
-        "http://127.0.0.1:5050/mcp"
+        "http://127.0.0.1:5000/mcp"
       ]
     }
   }
@@ -299,7 +279,7 @@ schema:
   path: ./schema.graphql
 transport:
   type: http
-  port: 5050
+  port: 5000
 ```
 </details>
 <details>
@@ -316,7 +296,7 @@ schema:
   path: ./schema.graphql
 transport:
   type: http
-  port: 5050
+  port: 5000
   host: localhost
 headers:
   Authorization: Bearer ${GRAPHQL_TOKEN}
@@ -367,8 +347,8 @@ After adding Apollo MCP Server to your client:
 - Check port numbers match between server and client config
 
 **Connection refused errors:**
-- Confirm the server is running on the correct port (default: 5050)
-- Verify firewall settings allow connections to localhost:5050
+- Confirm the server is running on the correct port (default: 5000)
+- Verify firewall settings allow connections to localhost:5000
 - For remote connections, ensure the host is set to `0.0.0.0` in your config
 
 **GraphQL operation errors:**
@@ -379,15 +359,7 @@ After adding Apollo MCP Server to your client:
 **Authentication issues:**
 - Verify environment variables are properly set
 - Check that your GraphQL endpoint accepts the provided headers
-- Test your GraphQL endpoint directly with tools like GraphiQL
-</details>
-<details>
-<summary>Getting Help</summary>
-
-- Check [Apollo MCP Server GitHub issues](https://github.com/apollographql/apollo-mcp-server/issues)
-- Join the [Apollo Community MCP Server Category](https://community.apollographql.com/c/mcp-server/41)
-- Contact your Apollo representative for direct support
-
+- Test your GraphQL endpoint directly using GraphOS Sandbox at http://localhost:4000
 </details>
 
 ## Step 4: Working with MCP Tools
@@ -427,11 +399,10 @@ Apollo MCP Server automatically detects new `.graphql` files and exposes them as
 
 ### Testing Operations in GraphOS Studio
 
-The `rover dev` command includes a built-in GraphQL explorer:
+The `rover dev` command command includes Sandbox:
 
 1. Open http://localhost:4000 in your browser
-2. You'll see GraphOS Studio's Sandbox Explorer
-3. Test your operations directly:
+2. Test your operations directly:
    - Browse your schema
    - Run queries and mutations
    - Experiment with variables
@@ -443,25 +414,11 @@ This is invaluable for:
 - Debugging query issues
 - Exploring available data
 
-### Testing with MCP Inspector
-
-Before connecting to Claude, test tools with MCP Inspector:
-
-```bash
-npx @modelcontextprotocol/inspector
-```
-
-Connect to `http://127.0.0.1:5050/mcp` and:
-- List available tools
-- Execute tools with test inputs
-- Inspect tool responses
-- Debug parameter mapping
-
 ## Step 5: Deploy Your MCP Server
 
 Once you're ready to deploy, Apollo MCP Server can run in any container environment.
 
-### Using the All-in-One Container
+### Using the Apollo Runtime Container
 
 Your project includes a pre-configured `mcp.Dockerfile` for easy deployment. This container includes:
 
@@ -476,7 +433,7 @@ docker build -f mcp.Dockerfile -t my-mcp-server .
 
 **Run locally:**
 ```bash
-docker run -p 4000:4000 -p 5050:5050 \
+docker run -p 4000:4000 -p 5050:5000 \
   -e APOLLO_KEY=$APOLLO_KEY \
   -e APOLLO_GRAPH_REF=$APOLLO_GRAPH_REF \
   my-mcp-server
@@ -519,7 +476,7 @@ Ensure these variables are set in your deployment environment:
 |----------|-------------|----------|
 | `APOLLO_KEY` | Your graph's API key | Yes |
 | `APOLLO_GRAPH_REF` | Your graph reference | Yes |
-| `APOLLO_MCP_TRANSPORT__PORT` | MCP server port (default: 5050) | No |
+| `APOLLO_MCP_TRANSPORT__PORT` | MCP server port (default: 5000) | No |
 | `APOLLO_ROUTER_PORT` | Router port (default: 4000) | No |
 
 For more deployment options, see the [Deploy the MCP Server](.deploy) page.
