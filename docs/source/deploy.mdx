@@ -80,14 +80,14 @@ docker run \
 
 ## When to choose which option?
 
-| Scenario                                | Recommended Option           | Why                                                       |
-| --------------------------------------- | ---------------------------- | --------------------------------------------------------- |
-| **New GraphQL + MCP deployment**        | **Apollo Runtime Container** | Single container, easier to manage, optimized performance |
-| **Adding MCP to existing GraphQL API**  | Standalone Apollo MCP Server | Connect to your existing GraphQL endpoint                 |
-| **GraphOS managed graph**               | **Apollo Runtime Container** | Automatic schema/PQ sync, unified telemetry               |
-| **Local development**                   | Either option works          | Choose what matches your production setup                 |
-| **Kubernetes/orchestrated environment** | **Apollo Runtime Container** | Fewer moving parts, simpler networking                    
-
+| Scenario                            | Recommended Option           | Why                                                                                                       |
+| ----------------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------- |
+| New GraphQL + MCP deployment        | Apollo Runtime Container     | Single container, easier to manage, optimized performance                                                 |
+| GraphOS-managed graph               | Apollo Runtime Container     | Automatic sync for schema and persisted queries, unified telemetry                                        |
+| Kubernetes/orchestrated environment | Apollo Runtime Container     | Fewer moving parts, simpler networking                                                                    |
+| Adding MCP to existing GraphQL API  | Standalone Apollo MCP Server | Connect to your existing GraphQL endpoint                                                                 |
+| Local development                   | `rover dev`                  | [Run `rover dev`](/apollo-mcp-server/run#with-the-rover-cli) to develop locally with both GraphQL and MCP |
+          
 ## Production Considerations
 
 ### Load Balancing & Session Affinity
