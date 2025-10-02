@@ -42,8 +42,6 @@ All transports maintain full MCP protocol compliance while optimizing for specif
 - `none`: Disable all mutations for read-only access
 - `allowlist`: Only allow specific mutations
 
-**Operation Name Tracking**: Automatic inclusion of operation names in GraphQL requests for better tracing and debugging.
-
 ### **📊 Flexible Schema & Operation Management**
 
 **Dual Schema Sources:**
