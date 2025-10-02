@@ -93,7 +93,7 @@ All transports maintain full MCP protocol compliance while optimizing for specif
 **OpenTelemetry Integration**: Comprehensive observability with traces, metrics, and events:
 
 - Operation-level performance tracking
-- Token usage estimation
+- Semantic conventions for HTTP servers when using the Streamable HTTP transport.
 - OTLP export to any OpenTelemetry-compatible collector
 - Integration with existing monitoring infrastructure
 
