@@ -359,7 +359,7 @@ After adding Apollo MCP Server to your client:
 **Authentication issues:**
 - Verify environment variables are properly set
 - Check that your GraphQL endpoint accepts the provided headers
-- Test your GraphQL endpoint directly using GraphOS Sandbox at http://localhost:4000
+- When using `rover dev` you can test your GraphQL endpoint using GraphOS Sandbox at [http://localhost:4000](http://localhost:4000)
 </details>
 
 ## Step 4: Working with MCP Tools
@@ -436,6 +436,7 @@ docker build -f mcp.Dockerfile -t my-mcp-server .
 docker run -p 4000:4000 -p 5050:5000 \
   -e APOLLO_KEY=$APOLLO_KEY \
   -e APOLLO_GRAPH_REF=$APOLLO_GRAPH_REF \
+  -e MCP_ENABLE=1 \
   my-mcp-server
 ```
 
