@@ -215,73 +215,36 @@ Alternatively, edit your Windsurf configuration file directly:
 1. Verify GraphQL operations are listed as available tools
 1. Test a query using one of your configured operations
 
-## Configuration options
+## Step 4: Define MCP tools
 
-When using Apollo MCP Server, you can customize the server configuration through your `config.yaml` file - see the [YAML Config Reference page](./config-file) for a list of options.
+MCP tools are defined as GraphQL operations. The project template currently uses operation collections as the source of its tools.
 
-Examples:
+<Note>
 
-<details>
-<summary>Basic Configuration</summary>
+See [Define MCP Tools](/apollo-mcp-server/define-tools) for other ways to define MCP tools.
 
-```yaml
-endpoint: https://your-graphql-endpoint.com/graphql
-operations:
-  source: local
-  paths:
-    - ./operations
-schema:
-  source: local
-  path: ./schema.graphql
-transport:
-  type: http
-  port: 5050
-```
-</details>
-<details>
-<summary>Advanced Configuration</summary>
+</Note>
 
-```yaml
-endpoint: https://your-graphql-endpoint.com/graphql
-operations:
-  source: local
-  paths:
-    - ./operations
-schema:
-  source: local
-  path: ./schema.graphql
-transport:
-  type: http
-  port: 5050
-  host: localhost
-headers:
-  Authorization: Bearer ${GRAPHQL_TOKEN}
-  X-API-Key: ${API_KEY}
-timeout: 30000
-retry:
-  attempts: 3
-  delay: 1000
-```
+1. Navigate to Sandbox at [http://localhost:4000](http://localhost:4000).
+1. Click the Bookmark icon to open Operation Collections.
+1. Click  **Sandbox** beside "Showing saved operations for your Sandbox, across all endpoints" and select your graph. This represents the graph name and ID you used when creating your project.
+1. You'll see an operation collection called "Default MCP Tools".
+1. Create a new operation in the middle panel:
 
-</details>
+    ```graphql
+    # Retrieves product information
+    query GetProducts {
+      products {
+        id
+        name
+        description
+      }
+    }
+    ```
 
-<details>
-<summary>Environment Variables</summary>
-
-You can use environment variables in your configuration:
-
-```yaml
-endpoint: ${GRAPHQL_ENDPOINT}
-headers:
-  Authorization: Bearer ${GRAPHQL_TOKEN}
-```
-
-Set these in your environment:
-```bash
-export GRAPHQL_ENDPOINT="https://your-api.com/graphql"
-export GRAPHQL_TOKEN="your-token-here"
-```
-</details>
+1. Click the **Save** button and give it the name `GetProducts`.
+1. Select the `Default MCP Tools` collection and click **Save**.
+1. Restart your MCP client and test the connection by asking: "What MCP tools do you have available?". You should see the `GetProducts` tool listed. You can also test this with MCP Inspector.
 
 ## Troubleshooting
 
