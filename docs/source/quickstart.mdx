@@ -248,32 +248,23 @@ See [Define MCP Tools](/apollo-mcp-server/define-tools) for other ways to define
 
 ## Troubleshooting
 
-<details>
-<summary>Common Issues</summary>
-
 **Client doesn't see tools:**
 - Ensure you restarted your MCP client after configuration
 - Verify the Apollo MCP Server is running (`rover dev` command)
 - Check port numbers match between server and client config
 
 **Connection refused errors:**
-- Confirm the server is running on the correct port (default: 5050)
+- Confirm the server is running on the correct port
 - Verify firewall settings allow connections to localhost:5050
 - For remote connections, ensure the host is set to `0.0.0.0` in your config
 
-**GraphQL operation errors:**
-- Verify your operations files exist in the specified paths
-- Check that operation names match your GraphQL schema
-- Ensure your GraphQL endpoint is accessible
 
 **Authentication issues:**
 - Verify environment variables are properly set
 - Check that your GraphQL endpoint accepts the provided headers
-- When using `rover dev` you can test your GraphQL endpoint using GraphOS Sandbox at [http://localhost:4000](http://localhost:4000)
-</details>
+- When using `rover dev` you can test your GraphQL endpoint using Sandbox at [http://localhost:4000](http://localhost:4000)
 
 ## Step 4: Working with MCP Tools
-
 Now that your MCP server is connected, learn how to customize and create tools.
 
 ### Understanding Tools
