@@ -39,47 +39,45 @@ Type `Y` to confirm and create your project files.
 
 You can start your MCP server locally with `rover dev`.
 
-Choose the environment-specific command to load environment variables from the provided `.env` file and start the MCP server.
+1. Choose the environment-specific command to load environment variables from the provided `.env` file and start the MCP server.
 
-<Tabs>
+    <Tabs>
 
-    <Tab label="Linux / MacOS">
-    
+        <Tab label="Linux / MacOS">
+        
+        ```terminal showLineNumbers=false
+        set -a && source .env && set +a && rover dev --supergraph-config supergraph.yaml --mcp .apollo/mcp.local.yaml
+        ```
+
+        </Tab>
+
+        <Tab label="Windows Powershell">
+
+        ```terminal showLineNumbers=false
+        Get-Content .env | ForEach-Object { $name, $value = $_.split('=',2); [System.Environment]::SetEnvironmentVariable($name, $value) }
+        rover dev --supergraph-config supergraph.yaml --mcp .apollo/mcp.local.yaml
+        ```
+        </Tab>
+        
+    </Tabs>
+
+1. You should see some output indicating that the GraphQL server is running at `http://localhost:4000` and the MCP server is running at `http://127.0.0.1:5050`.
+
+1. In a new terminal window, run the MCP Inspector to verify the server is running:
+
     ```terminal showLineNumbers=false
-    set -a && source .env && set +a && rover dev --supergraph-config supergraph.yaml --mcp .apollo/mcp.local.yaml
+    npx @modelcontextprotocol/inspector http://127.0.0.1:5050/mcp --transport http
     ```
 
-    </Tab>
+1. This will automatically open your browser to `http://127.0.0.1:6274`.
 
-    <Tab label="Windows Powershell">
+1. Click **Connect**, then **List Tools** to see the available tools.
 
-    ```terminal showLineNumbers=false
-    Get-Content .env | ForEach-Object { $name, $value = $_.split('=',2); [System.Environment]::SetEnvironmentVariable($name, $value) }
-    rover dev --supergraph-config supergraph.yaml --mcp .apollo/mcp.local.yaml
-    ```
-    </Tab>
-    
-</Tabs>
-
-You should see some output indicating that the GraphQL server is running at `http://localhost:4000` and the MCP server is running at `http://127.0.0.1:5050`.
-
-### Verify with MCP Inspector
-
-In a new terminal window, run the MCP Inspector:
-
-```terminal showLineNumbers=false
-npx @modelcontextprotocol/inspector http://127.0.0.1:5050/mcp --transport http
-```
-
-This will automatically open your browser to `http://127.0.0.1:6274`.
-
-Click **Connect**, then **List Tools** to see the available tools.
-
-## Step 3: Connect to Claude Desktop
+## Step 3: Connect to an MCP client
 
 Apollo MCP Server works with any MCP-compatible client. Choose your favorite client and follow the instructions to connect.
 
-<ExpansionPanel title="Claude Desktop">
+<ExpansionPanel title="Claude Desktop (recommended)">
 
 Open the `claude_desktop_config.json` file in one of the following paths:
 
@@ -210,10 +208,10 @@ Alternatively, edit your Windsurf configuration file directly:
 ```
 </ExpansionPanel>
 
-1. Restart your MCP client 
-1. Test the connection by asking: "What MCP tools do you have available?"
-1. Verify GraphQL operations are listed as available tools
-1. Test a query using one of your configured operations
+1. Restart your MCP client.
+1. Test the connection by asking: "What MCP tools do you have available?". 
+1. Verify GraphQL operations are listed as available tools.
+1. Test a query using one of your configured operations.
 
 ## Step 4: Define MCP tools
 
@@ -246,27 +244,9 @@ See [Define MCP Tools](/apollo-mcp-server/define-tools) for other ways to define
 1. Select the `Default MCP Tools` collection and click **Save**.
 1. Restart your MCP client and test the connection by asking: "What MCP tools do you have available?". You should see the `GetProducts` tool listed. You can also test this with MCP Inspector.
 
-## Troubleshooting
-
-**Client doesn't see tools:**
-- Ensure you restarted your MCP client after configuration
-- Verify the Apollo MCP Server is running (`rover dev` command)
-- Check port numbers match between server and client config
-
-**Connection refused errors:**
-- Confirm the server is running on the correct port
-- Verify firewall settings allow connections to localhost:5050
-- For remote connections, ensure the host is set to `0.0.0.0` in your config
-
-
-**Authentication issues:**
-- Verify environment variables are properly set
-- Check that your GraphQL endpoint accepts the provided headers
-- When using `rover dev` you can test your GraphQL endpoint using Sandbox at [http://localhost:4000](http://localhost:4000)
-
 ## Step 5: Deploy your MCP server
 
-Once you're ready to deploy, Apollo MCP Server can run in any container environment.
+Apollo MCP Server can run in any container environment.
 
 ### Using the Apollo Runtime Container
 
@@ -322,6 +302,23 @@ After deploying, update your MCP client configuration to use the deployed URL:
   }
 }
 ```
+
+## Troubleshooting
+
+**Client doesn't see tools:**
+- Ensure you restarted your MCP client after configuration
+- Verify the Apollo MCP Server is running (`rover dev` command)
+- Check port numbers match between server and client config
+
+**Connection refused errors:**
+- Confirm the server is running on the correct port
+- Verify firewall settings allow connections to localhost:5050
+- For remote connections, ensure the host is set to `0.0.0.0` in your config
+
+**Authentication issues:**
+- Verify environment variables are properly set
+- Check that your GraphQL endpoint accepts the provided headers
+- When using `rover dev` you can test your GraphQL endpoint using Sandbox at [http://localhost:4000](http://localhost:4000)
 
 ## Additional resources
 
