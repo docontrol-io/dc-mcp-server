@@ -72,60 +72,69 @@ Before connecting to Claude, verify your MCP server is working. In a new termina
 npx @modelcontextprotocol/inspector http://127.0.0.1:5050/mcp --transport http
 ```
 
-1. This will automatically open your browser to `http://127.0.0.1:6274`.
-1. In MCP Inspector, select `Streamable HTTP` as the Transport Type and enter `http://127.0.0.1:5050/mcp` as the URL.
-2. Click **Connect**, then **List Tools**.
+This will automatically open your browser to `http://127.0.0.1:6274`.
 
-You should see MCP tools listed.
+Click **Connect**, then **List Tools** to see the available tools.
 
 ## Step 3: Connect to Claude Desktop
 
-Apollo MCP Server works with **any** MCP-compatible client. Add the generated initial `config.json` to the AI application of your choosing. 
+Apollo MCP Server works with any MCP-compatible client. Choose your favorite client and follow the instructions to connect.
 
-The template comes with config for Claude Desktop.
+<ExpansionPanel title="Claude Desktop">
 
-```bash
-# Copy the configuration for Claude Desktop
-# macOS:
-cp claude_desktop_config.json ~/Library/Application\ Support/Claude/claude_desktop_config.json
+Open the `claude_desktop_config.json` file in one of the following paths:
 
-# Windows:
-copy claude_desktop_config.json "%APPDATA%\Claude\claude_desktop_config.json"
+- Mac OS: `~/Library/Application\ Support/Claude/claude_desktop_config.json`
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+- Linux: `~/.config/Claude/claude_desktop_config.json`
 
-# Linux:
-cp claude_desktop_config.json ~/.config/Claude/claude_desktop_config.json
+Copy the configuration:
 
-# Restart Claude Desktop
+```json
+{
+  "mcpServers": {
+    "mcp-My API": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "http://127.0.0.1:5050/mcp"
+      ]
+    }
+  }
+}
 ```
 
-<details>
-<summary>Claude Code</summary>
+</ExpansionPanel>
 
+<ExpansionPanel title="Claude Code">
 Install using the CLI:
 
 ```bash
-claude mcp add apollo-mcp npx mcp-remote http://127.0.0.1:5000/mcp
+claude mcp add apollo-mcp npx mcp-remote http://127.0.0.1:5050/mcp
 ```
-</details>
-<details>
-<summary>Cursor</summary>
+</ExpansionPanel>
 
+<ExpansionPanel title="Cursor">
 Click the button to quick install:
 
-[![Install Apollo MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](cursor://anysphere.cursor-deeplink/mcp/install?name=apollo-mcp&config=eyJjb21tYW5kIjoibnB4IG1jcC1yZW1vdGUgaHR0cDovLzEyNy4wLjAuMTo1MDUwL21jcCJ9)
+<a href="cursor://anysphere.cursor-deeplink/mcp/install?name=apollo-mcp&config=eyJjb21tYW5kIjoibnB4IG1jcC1yZW1vdGUgaHR0cDovLzEyNy4wLjAuMTo1MDUwL21jcCJ9">
+  <img
+    src="https://cursor.com/deeplink/mcp-install-dark.svg"
+    alt="Install Apollo MCP Server"
+    width="200"
+  />
+</a>
 
 Or install manually:
 
 1. Go to **Cursor Settings** → **MCP** → **Add new MCP Server**
 2. Name: `Apollo MCP` (choose a title)
 3. Command: `npx`
-4. Arguments: `["mcp-remote", "http://127.0.0.1:5000/mcp"]`
-</details>
+4. Arguments: `["mcp-remote", "http://127.0.0.1:5050/mcp"]`
+</ExpansionPanel>
 
-<details>
-<summary>Goose</summary>
+<ExpansionPanel title="Goose">
 Add Apollo MCP Server to your Goose configuration. Edit your `~/.config/goose/profiles.yaml`:
-
 
 ```yaml
 default:
@@ -141,26 +150,24 @@ default:
           command: npx
           args:
             - mcp-remote
-            - http://127.0.0.1:5000/mcp
+            - http://127.0.0.1:5050/mcp
 ```
 
 Or use the Goose CLI to add the MCP server:
 
 ```bash
-goose mcp add apollo-mcp npx mcp-remote http://127.0.0.1:5000/mcp
+goose mcp add apollo-mcp npx mcp-remote http://127.0.0.1:5050/mcp
 ```
-</details>
-<details>
-<summary>Cline (VS Code Extension)</summary>
+</ExpansionPanel>
 
+<ExpansionPanel title="Cline (VS Code Extension)">
 1. Go to **Advanced settings** → **Extensions** → **Add custom extension**
 2. Name: `Apollo MCP`
 3. Type: **STDIO**
-4. Command: `npx mcp-remote http://127.0.0.1:5000/mcp`
-</details>
-<details>
-<summary>OpenCode</summary>
+4. Command: `npx mcp-remote http://127.0.0.1:5050/mcp`
+</ExpansionPanel>
 
+<ExpansionPanel title="OpenCode">
 Edit `~/.config/opencode/opencode.json`:
 
 ```json
@@ -172,21 +179,20 @@ Edit `~/.config/opencode/opencode.json`:
       "command": [
         "npx",
         "mcp-remote",
-        "http://127.0.0.1:5000/mcp"
+        "http://127.0.0.1:5050/mcp"
       ],
       "enabled": true
     }
   }
 }
 ```
-</details>
-<details>
-<summary>Windsurf</summary>
+</ExpansionPanel>
 
-Go to **Windsurf Settings → MCP → Add new MCP Server**
-Name: `Apollo MCP`
-Command: `npx`
-Arguments: `["mcp-remote", "http://127.0.0.1:5000/mcp"]`
+<ExpansionPanel title="Windsurf">
+1. Go to **Windsurf Settings → MCP → Add new MCP Server**
+2. Name: `Apollo MCP`
+3. Command: `npx`
+4. Arguments: `["mcp-remote", "http://127.0.0.1:5050/mcp"]`
 
 Alternatively, edit your Windsurf configuration file directly:
 
@@ -197,14 +203,18 @@ Alternatively, edit your Windsurf configuration file directly:
       "command": "npx",
       "args": [
         "mcp-remote",
-        "http://127.0.0.1:5000/mcp"
+        "http://127.0.0.1:5050/mcp"
       ]
     }
   }
 }
 ```
-</details>
+</ExpansionPanel>
 
+1. Restart your MCP client 
+1. Test the connection by asking: "What MCP tools do you have available?"
+1. Verify GraphQL operations are listed as available tools
+1. Test a query using one of your configured operations
 
 
 ## Configuration Options
@@ -227,7 +237,7 @@ schema:
   path: ./schema.graphql
 transport:
   type: http
-  port: 5000
+  port: 5050
 ```
 </details>
 <details>
@@ -244,7 +254,7 @@ schema:
   path: ./schema.graphql
 transport:
   type: http
-  port: 5000
+  port: 5050
   host: localhost
 headers:
   Authorization: Bearer ${GRAPHQL_TOKEN}
@@ -275,15 +285,6 @@ export GRAPHQL_TOKEN="your-token-here"
 ```
 </details>
 
-## Verification
-
-After adding Apollo MCP Server to your client:
-
-1. **Restart your MCP client** (Claude Desktop, Cursor, etc.)
-2. **Test the connection** by asking: "What MCP tools do you have available?"
-3. **Verify GraphQL operations** are listed as available tools
-4. **Test a query** using one of your configured operations
-
 ## Troubleshooting
 
 <details>
@@ -295,8 +296,8 @@ After adding Apollo MCP Server to your client:
 - Check port numbers match between server and client config
 
 **Connection refused errors:**
-- Confirm the server is running on the correct port (default: 5000)
-- Verify firewall settings allow connections to localhost:5000
+- Confirm the server is running on the correct port (default: 5050)
+- Verify firewall settings allow connections to localhost:5050
 - For remote connections, ensure the host is set to `0.0.0.0` in your config
 
 **GraphQL operation errors:**
@@ -381,7 +382,7 @@ docker build -f mcp.Dockerfile -t my-mcp-server .
 
 **Run locally:**
 ```bash
-docker run -p 4000:4000 -p 5050:5000 \
+docker run -p 4000:4000 -p 5050:5050 \
   -e APOLLO_KEY=$APOLLO_KEY \
   -e APOLLO_GRAPH_REF=$APOLLO_GRAPH_REF \
   -e MCP_ENABLE=1 \
@@ -425,7 +426,7 @@ Ensure these variables are set in your deployment environment:
 |----------|-------------|----------|
 | `APOLLO_KEY` | Your graph's API key | Yes |
 | `APOLLO_GRAPH_REF` | Your graph reference | Yes |
-| `APOLLO_MCP_TRANSPORT__PORT` | MCP server port (default: 5000) | No |
+| `APOLLO_MCP_TRANSPORT__PORT` | MCP server port (default: 5050) | No |
 | `APOLLO_ROUTER_PORT` | Router port (default: 4000) | No |
 
 For more deployment options, see the [Deploy the MCP Server](.deploy) page.
