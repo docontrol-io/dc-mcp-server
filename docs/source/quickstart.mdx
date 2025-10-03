@@ -36,10 +36,9 @@ The wizard shows all files that will be created, including:
 
 Type `Y` to confirm and create your project files.
 
+## Step 2: Run your MCP Server
 
-## Step 2: Run Your MCP Server
-
-Now that your project is created, you can start your MCP server locally with `rover dev`.
+You can start your MCP server locally with `rover dev`.
 
 ### Load Environment Variables and Start MCP Server
 
@@ -48,7 +47,7 @@ Now that your project is created, you can start your MCP server locally with `ro
     <Tab label="Linux / MacOS">
     
     ```terminal showLineNumbers=false
-    source .env && rover dev --supergraph-config supergraph.yaml --mcp mcpconfig/mcp.local.yaml
+    set -a && source .env && set +a && rover dev --supergraph-config supergraph.yaml --mcp .apollo/mcp.local.yaml
     ```
 
     </Tab>
@@ -57,47 +56,35 @@ Now that your project is created, you can start your MCP server locally with `ro
     ##### Powershell
 
     ```terminal showLineNumbers=false
-        Get-Content .env | ForEach-Object {
-            $name, $value = $_.split('=',2);
-            [System.Environment]::SetEnvironmentVariable($name, $value)
-        }
-
-        rover dev --supergraph-config supergraph.yaml --mcp mcpconfig/mcp.local.yaml
+        Get-Content .env | ForEach-Object { $name, $value = $_.split('=',2); [System.Environment]::SetEnvironmentVariable($name, $value) }
+        rover dev --supergraph-config supergraph.yaml --mcp .apollo/mcp.local.yaml
     ```
     </Tab>
 </Tabs>
 
-You should see:
-
-```
-✓ MCP server running at http://localhost:5000
-✓ GraphQL API running at http://localhost:4000
-```
-
-Alternatively, you can also run the Apollo MCP Server via Docker, Apollo Runtime Container or using the MCP server binary - see the full guide on [Running the Apollo MCP Server](https://www.apollographql.com/docs/apollo-mcp-server/run).
-
+You should see some output indicating that the GraphQL server is running at `http://localhost:4000` and the MCP server is running at `http://127.0.0.1:5050`.
 
 ### Verify with MCP Inspector
 
-Before connecting Claude, verify your MCP server is working:
+Before connecting to Claude, verify your MCP server is working. In a new terminal window, run:
 
 ```terminal
-npx @modelcontextprotocol/inspector http://127.0.0.1:5000/mcp --transport http
+npx @modelcontextprotocol/inspector http://127.0.0.1:5050/mcp --transport http
 ```
 
-1. Open your browser to `http://127.0.0.1:6274`
-2. Click **Connect**, then **List Tools**
+1. This will automatically open your browser to `http://127.0.0.1:6274`.
+1. In MCP Inspector, select `Streamable HTTP` as the Transport Type and enter `http://127.0.0.1:5050/mcp` as the URL.
+2. Click **Connect**, then **List Tools**.
 
-You should see your GraphQL operations listed as MCP tools.
+You should see MCP tools listed.
 
 ## Step 3: Connect to Claude Desktop
 
-Apollo MCP Server works with **any** MCP-compatible client - add the generated initial `config.json` to the AI application of your choosing:
+Apollo MCP Server works with **any** MCP-compatible client. Add the generated initial `config.json` to the AI application of your choosing. 
 
-<details>
-<summary>Claude Desktop</summary>
+The template comes with config for Claude Desktop.
 
-```
+```bash
 # Copy the configuration for Claude Desktop
 # macOS:
 cp claude_desktop_config.json ~/Library/Application\ Support/Claude/claude_desktop_config.json
@@ -111,7 +98,6 @@ cp claude_desktop_config.json ~/.config/Claude/claude_desktop_config.json
 # Restart Claude Desktop
 ```
 
-</details>
 <details>
 <summary>Claude Code</summary>
 
