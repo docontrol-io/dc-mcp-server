@@ -9,21 +9,21 @@ This guide walks you through the process of creating, running and configuring an
 
 ## Prerequisites
 
-- [Rover CLI](/rover/getting-started) v0.36 or later
+- [Rover CLI](/rover/getting-started) v0.36 or later. We'll use Rover to initialize a project and run the MCP server.
 - [Node.js](https://nodejs.org/) v18 or later (for `mcp-remote`)
 - [Claude Desktop](https://claude.ai/download) or another MCP-compatible client
 
 ## Step 1: Create an MCP server
 
-The [Rover CLI](/rover) is the fastest way to create an Apollo MCP Server using `rover init --mcp`, which creates a project in your local directory.
-
 Run the interactive initialization command:
 
-```bash
+```bash showLineNumbers=false
 rover init --mcp
 ```
 
-The CLI wizard guides you through several prompts. Select **Create MCP tools from a new Apollo GraphOS project** and **Apollo graph with Connectors (connect to REST services)** as your starting point.
+The CLI wizard guides you through several prompts. 
+
+Select **Create MCP tools from a new Apollo GraphOS project** and **Apollo graph with Connectors (connect to REST services)** as your starting point.
 
 You'll also need to select your organization and give your project a name and ID.
 
@@ -31,7 +31,6 @@ The wizard shows all files that will be created, including:
 
 - MCP server configuration files
 - GraphQL schema and operations
-- Client configuration (Claude Desktop)
 - Docker setup for (optional) deployment
 
 Type `Y` to confirm and create your project files.
@@ -40,7 +39,7 @@ Type `Y` to confirm and create your project files.
 
 You can start your MCP server locally with `rover dev`.
 
-### Load Environment Variables and Start MCP Server
+Choose the environment-specific command to load environment variables from the provided `.env` file and start the MCP server.
 
 <Tabs>
 
@@ -51,24 +50,24 @@ You can start your MCP server locally with `rover dev`.
     ```
 
     </Tab>
-    <Tab label="Windows">
 
-    ##### Powershell
+    <Tab label="Windows Powershell">
 
     ```terminal showLineNumbers=false
-        Get-Content .env | ForEach-Object { $name, $value = $_.split('=',2); [System.Environment]::SetEnvironmentVariable($name, $value) }
-        rover dev --supergraph-config supergraph.yaml --mcp .apollo/mcp.local.yaml
+    Get-Content .env | ForEach-Object { $name, $value = $_.split('=',2); [System.Environment]::SetEnvironmentVariable($name, $value) }
+    rover dev --supergraph-config supergraph.yaml --mcp .apollo/mcp.local.yaml
     ```
     </Tab>
+    
 </Tabs>
 
 You should see some output indicating that the GraphQL server is running at `http://localhost:4000` and the MCP server is running at `http://127.0.0.1:5050`.
 
 ### Verify with MCP Inspector
 
-Before connecting to Claude, verify your MCP server is working. In a new terminal window, run:
+In a new terminal window, run the MCP Inspector:
 
-```terminal
+```terminal showLineNumbers=false
 npx @modelcontextprotocol/inspector http://127.0.0.1:5050/mcp --transport http
 ```
 
@@ -216,8 +215,7 @@ Alternatively, edit your Windsurf configuration file directly:
 1. Verify GraphQL operations are listed as available tools
 1. Test a query using one of your configured operations
 
-
-## Configuration Options
+## Configuration options
 
 When using Apollo MCP Server, you can customize the server configuration through your `config.yaml` file - see the [YAML Config Reference page](./config-file) for a list of options.
 
