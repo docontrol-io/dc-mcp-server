@@ -9,30 +9,13 @@ This guide walks you through the process of creating, running and configuring an
 
 ## Prerequisites
 
-- [Rover CLI](https://www.apollographql.com/docs/rover/getting-started) v0.36 or later
-- [Node.js](https://nodejs.org/) v18 or later (for mcp-remote)
+- [Rover CLI](/rover/getting-started) v0.36 or later
+- [Node.js](https://nodejs.org/) v18 or later (for `mcp-remote`)
 - [Claude Desktop](https://claude.ai/download) or another MCP-compatible client
 
 ## Step 1: Create an MCP server
 
-[Rover](https://www.apollographql.com/docs/rover) is the fastest way to create an Apollo MCP Server is using `rover init --mcp`. This command creates a complete project with:
-
-- Pre-configured MCP server setup
-- A federated GraphQL schema
-- Sample GraphQL operations as MCP tools
-- Claude Desktop configuration
-
-### Authenticate with GraphOS
-
-First, authenticate Rover with your Apollo account:
-
-```bash
-rover config auth
-```
-
-This opens your browser to create a personal API key. If you don't have an Apollo account, you'll be prompted to create one.
-
-### Initialize your MCP project
+The [Rover CLI](/rover) is the fastest way to create an Apollo MCP Server using `rover init --mcp`, which creates a project in your local directory.
 
 Run the interactive initialization command:
 
@@ -40,34 +23,18 @@ Run the interactive initialization command:
 rover init --mcp
 ```
 
-The CLI wizard will guide you through several prompts:
+The CLI wizard guides you through several prompts. Select **Create MCP tools from a new Apollo GraphOS project** and **Apollo graph with Connectors (connect to REST services)** as your starting point.
 
-1. Select option
-
-- Choose "Create MCP tools from a new Apollo GraphOS project" for a fresh start
-- Or choose "Create MCP tools from an existing Apollo GraphOS project" to add MCP to an existing graph
-
-2. Choose a template
-
-- Apollo graph with Apollo connectors - Connect to REST services _(recommended for most use cases)_
-- Apollo graph with GraphQL connectors - Connect to existing GraphQL endpoints
-
-3. Name your project
-
-- Enter a descriptive name (e.g., "my-mcp-server", "spacedevs-mcp")
-
-4. Review and confirm
+You'll also need to select your organization and give your project a name and ID.
 
 The wizard shows all files that will be created, including:
 
-```bash
 - MCP server configuration files
 - GraphQL schema and operations
-- Client configuration (Claude Desktop, etc.)
-- Docker setup for (optional) deployment 
-```
+- Client configuration (Claude Desktop)
+- Docker setup for (optional) deployment
 
-Type `Y` to confirm and create your project. Your MCP server will be initialized and ready for next steps.
+Type `Y` to confirm and create your project files.
 
 
 ## Step 2: Run Your MCP Server
