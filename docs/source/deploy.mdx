@@ -100,11 +100,11 @@ Most cloud load balancers (ALB, GCP LB) don't support header-based session affin
 
 #### Stateless mode
 
-While MCP is a stateful protocol by default, the Streamable HTTP transport does support operating in a stateless mode.
-This means that the session id will not be passed back and forth between the client and server and each request made to the MCP server happens in its own HTTP POST.
+Although MCP is a stateful protocol by default, the Streamable HTTP transport supports operating in a stateless mode.
+This means that the session ID will not be passed back and forth between the client and server and each request made to the MCP server happens in its own HTTP POST.
 Disabling the session state being managed in memory by a single host allows for horizontal scaling of the server, though could lead to unknown issues if your MCP client has a dependency on sticky sessions.
 
-Stateless mode can be configured in the transport config section,
+You can configure stateless mode in the transport config section:
 
 ```yaml
 transport:
