@@ -71,7 +71,7 @@ schema:
 docker run \
   -it --rm \
   --name apollo-mcp-server \
-  -p 5050:5050 \
+  -p 5050:5000 \
   -v <path/to>/mcp_config.yaml:/config.yaml \
   -v $PWD/graphql/TheSpaceDevs:/data \
   --pull always \
