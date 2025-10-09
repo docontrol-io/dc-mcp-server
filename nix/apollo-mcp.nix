@@ -39,6 +39,7 @@
       pkg-config
       pkgs.gcc
       pkgs.gnumake
+      pkgs.binutils
     ];
     buildInputs = [];
 
@@ -59,21 +60,21 @@
   cargoArtifacts = craneLib.buildDepsOnly (craneCommonArgs // {
     # Ensure we use native toolchain and don't cross-compile
     CARGO_BUILD_TARGET = pkgs.stdenv.hostPlatform.config;
-    # Force native toolchain usage
-    CC = "gcc";
-    CXX = "g++";
-    AR = "ar";
-    LD = "ld";
-    RANLIB = "ranlib";
-    STRIP = "strip";
-    NM = "nm";
-    OBJCOPY = "objcopy";
-    OBJDUMP = "objdump";
-    READELF = "readelf";
+    # Force native toolchain usage using Nix-provided tools
+    CC = "${pkgs.gcc}/bin/gcc";
+    CXX = "${pkgs.gcc}/bin/g++";
+    AR = "${pkgs.binutils}/bin/ar";
+    LD = "${pkgs.binutils}/bin/ld";
+    RANLIB = "${pkgs.binutils}/bin/ranlib";
+    STRIP = "${pkgs.binutils}/bin/strip";
+    NM = "${pkgs.binutils}/bin/nm";
+    OBJCOPY = "${pkgs.binutils}/bin/objcopy";
+    OBJDUMP = "${pkgs.binutils}/bin/objdump";
+    READELF = "${pkgs.binutils}/bin/readelf";
     # Additional environment variables to prevent cross-compilation
-    CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER = "gcc";
-    CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_CC = "gcc";
-    CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_CXX = "g++";
+    CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER = "${pkgs.gcc}/bin/gcc";
+    CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_CC = "${pkgs.gcc}/bin/gcc";
+    CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_CXX = "${pkgs.gcc}/bin/g++";
     # Override cargo command to avoid --all-targets which might cause cross-compilation
     cargoCheckCommand = "cargo check --release";
   });
