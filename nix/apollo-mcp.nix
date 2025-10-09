@@ -24,7 +24,9 @@
     name = "source"; # Be reproducible, regardless of the directory name
   };
 
-  craneLib = (crane.mkLib pkgs).overrideToolchain toolchain;
+  # Use native toolchain to avoid cross-compilation issues
+  nativeToolchain = pkgs.rust-bin.stable.latest.default;
+  craneLib = (crane.mkLib pkgs).overrideToolchain nativeToolchain;
   craneCommonArgs = {
     inherit src;
     pname = "apollo-mcp";
@@ -46,7 +48,10 @@
 
   # Generate a derivation for just the dependencies of the project so that they
   # can be cached across all of the various checks and builders.
-  cargoArtifacts = craneLib.buildDepsOnly craneCommonArgs;
+  cargoArtifacts = craneLib.buildDepsOnly (craneCommonArgs // {
+    # Override cargo command to avoid --all-targets which causes cross-compilation
+    cargoCheckCommand = "cargo check --release --locked";
+  });
 in {
   # Expose the list of build dependencies for inheriting in dev shells
   nativeDependencies = craneCommonArgs.nativeBuildInputs;
