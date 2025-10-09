@@ -53,15 +53,8 @@
 
   # Generate a derivation for just the dependencies of the project so that they
   # can be cached across all of the various checks and builders.
-  # Override buildDepsOnly to avoid --all-targets
-  cargoArtifacts = craneLib.buildDepsOnly (
-    craneCommonArgs
-    // {
-      # Override cargo commands to avoid --all-targets
-      cargoCheckCommand = "cargo check --release";
-      cargoExtraArgs = "";
-    }
-  );
+  # Use cargoCheck instead of buildDepsOnly to avoid --all-targets
+  cargoArtifacts = craneLib.cargoCheck craneCommonArgs;
 in {
   # Expose the list of build dependencies for inheriting in dev shells
   nativeDependencies = craneCommonArgs.nativeBuildInputs;
