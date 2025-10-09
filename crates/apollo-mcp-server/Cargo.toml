@@ -78,6 +78,7 @@ insta.workspace = true
 mockito = "1.7.0"
 opentelemetry_sdk = { version = "0.30.0", features = ["testing"] }
 rstest.workspace = true
+tempfile = "3.8.1"
 tokio.workspace = true
 tower = "0.5.2"
 tracing-test = "0.2.5"

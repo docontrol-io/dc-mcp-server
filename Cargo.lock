@@ -245,6 +245,7 @@ dependencies = [
  "serde",
  "serde_json",
  "syn 2.0.106",
+ "tempfile",
  "thiserror 2.0.17",
  "tokio",
  "tokio-util",

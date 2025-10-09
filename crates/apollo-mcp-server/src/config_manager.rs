@@ -111,3 +111,108 @@ impl ConfigManager {
         Ok(())
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use tempfile::TempDir;
+
+    /// Test config file creation and reading
+    #[test]
+    fn test_config_file_operations() {
+        let temp_dir = TempDir::new().unwrap();
+        let config_path = temp_dir.path().join("test_config.yaml");
+        
+        // Create initial config
+        let initial_config = r#"
+endpoint: "https://api.example.com/graphql"
+headers:
+  Authorization: Bearer initial_token
+  Content-Type: "application/json"
+"#;
+        fs::write(&config_path, initial_config).unwrap();
+
+        let config_manager = ConfigManager::new(config_path.to_string_lossy().to_string());
+
+        // Test reading current token
+        let token = config_manager.get_current_token().unwrap();
+        assert_eq!(token, Some("initial_token".to_string()));
+
+        // Test updating token
+        config_manager.update_auth_token("new_token").unwrap();
+
+        // Verify token was updated
+        let updated_token = config_manager.get_current_token().unwrap();
+        assert_eq!(updated_token, Some("new_token".to_string()));
+
+        // Verify config file content
+        let config_content = fs::read_to_string(&config_path).unwrap();
+        assert!(config_content.contains("Authorization: Bearer new_token"));
+    }
+
+    /// Test config file backup creation
+    #[test]
+    fn test_config_backup_creation() {
+        let temp_dir = TempDir::new().unwrap();
+        let config_path = temp_dir.path().join("test_config.yaml");
+        
+        let initial_config = r#"
+endpoint: "https://api.example.com/graphql"
+headers:
+  Authorization: Bearer old_token
+"#;
+        fs::write(&config_path, initial_config).unwrap();
+
+        let config_manager = ConfigManager::new(config_path.to_string_lossy().to_string());
+        
+        // Count files before update
+        let files_before: Vec<_> = fs::read_dir(temp_dir.path()).unwrap().collect();
+        let count_before = files_before.len();
+
+        // Update token
+        config_manager.update_auth_token("new_token").unwrap();
+
+        // Count files after update
+        let files_after: Vec<_> = fs::read_dir(temp_dir.path()).unwrap().collect();
+        let count_after = files_after.len();
+
+        // Should have one more file (backup)
+        assert_eq!(count_after, count_before + 1);
+
+        // Verify backup file exists
+        let backup_exists = fs::read_dir(temp_dir.path())
+            .unwrap()
+            .any(|entry| {
+                let entry = entry.unwrap();
+                entry.path().to_string_lossy().contains(".backup.")
+            });
+        assert!(backup_exists, "Backup file should exist");
+    }
+
+    /// Test config file verification
+    #[test]
+    fn test_config_verification() {
+        let temp_dir = TempDir::new().unwrap();
+        let config_path = temp_dir.path().join("test_config.yaml");
+        
+        let config_manager = ConfigManager::new(config_path.to_string_lossy().to_string());
+
+        // Test with non-existent file
+        let result = config_manager.verify_config();
+        assert!(result.is_err());
+
+        // Create valid config file
+        let valid_config = r#"
+endpoint: "https://api.example.com/graphql"
+headers:
+  Authorization: Bearer test_token
+"#;
+        fs::write(&config_path, valid_config).unwrap();
+
+        // Should now pass verification
+        let result = config_manager.verify_config();
+        assert!(result.is_ok());
+    }
+}
