@@ -34,6 +34,12 @@ jobs:
       - uses: nixbuild/nix-quick-install-action@v30
         with:
           nix_conf: ${{ env.nix_conf }}
+      - name: Install cross-compilation toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-x86-64-linux-gnu g++-x86-64-linux-gnu
+          # Verify installation
+          x86_64-linux-gnu-gcc --version
       - name: Restore and save Nix store
         uses: nix-community/cache-nix-action@v6
         with:
@@ -61,6 +67,12 @@ jobs:
       - uses: nixbuild/nix-quick-install-action@v30
         with:
           nix_conf: ${{ env.nix_conf }}
+      - name: Install cross-compilation toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-x86-64-linux-gnu g++-x86-64-linux-gnu
+          # Verify installation
+          x86_64-linux-gnu-gcc --version
       - name: Restore and save Nix store
         uses: nix-community/cache-nix-action@v6
         with:
@@ -87,6 +99,12 @@ jobs:
       - uses: nixbuild/nix-quick-install-action@v30
         with:
           nix_conf: ${{ env.nix_conf }}
+      - name: Install cross-compilation toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-x86-64-linux-gnu g++-x86-64-linux-gnu
+          # Verify installation
+          x86_64-linux-gnu-gcc --version
       - name: Restore and save Nix store
         uses: nix-community/cache-nix-action@v6
         with:
@@ -113,6 +131,12 @@ jobs:
       - uses: nixbuild/nix-quick-install-action@v30
         with:
           nix_conf: ${{ env.nix_conf }}
+      - name: Install cross-compilation toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-x86-64-linux-gnu g++-x86-64-linux-gnu
+          # Verify installation
+          x86_64-linux-gnu-gcc --version
       - name: Restore and save Nix store
         uses: nix-community/cache-nix-action@v6
         with:
