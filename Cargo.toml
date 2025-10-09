@@ -7,10 +7,10 @@ members = [
 ]
 
 [workspace.package]
-authors = ["Apollo <opensource@apollographql.com>"]
+authors = ["DoControl <dev@docontrol.io>"]
 edition = "2024"
 license-file = "LICENSE"
-repository = "https://github.com/apollographql/apollo-mcp-server"
+repository = "https://github.com/docontrol-io/dc-mcp-server"
 rust-version = "1.89.0"
 version = "1.0.0"
 
