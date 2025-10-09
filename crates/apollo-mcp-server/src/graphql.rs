@@ -413,7 +413,7 @@ mod test {
                 assert!(
                     e.message
                         .to_string()
-                        .starts_with("Failed to read GraphQL response body")
+                        .starts_with("Failed to parse JSON response")
                 );
             }
             _ => {
