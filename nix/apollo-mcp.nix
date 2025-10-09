@@ -52,10 +52,12 @@
   cargoArtifacts = craneLib.buildDepsOnly (
     craneCommonArgs
     // {
-      # Override cargo command to avoid --all-targets which causes cross-compilation
-      cargoCheckCommand = "cargo check --release";
-      # Also override cargoExtraArgs to ensure no --all-targets
+      # Completely override the cargo check command to avoid --all-targets
+      cargoCheckCommand = "cargo check --release --locked";
+      # Override cargoExtraArgs to ensure no additional flags
       cargoExtraArgs = "";
+      # Also override cargoBuildCommand to be safe
+      cargoBuildCommand = "cargo build --release --locked";
     }
   );
 in {
