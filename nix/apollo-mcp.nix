@@ -36,6 +36,10 @@
     nativeBuildInputs = [perl pkg-config];
     buildInputs = [];
 
+    # Force native builds only to prevent cross-compilation
+    CARGO_BUILD_TARGET = pkgs.stdenv.hostPlatform.config;
+    CARGO_TARGET_DIR = "target";
+
     # Meta information about the packages
     meta = {
       description = "Apollo MCP Server";
@@ -49,14 +53,7 @@
 
   # Generate a derivation for just the dependencies of the project so that they
   # can be cached across all of the various checks and builders.
-  # Use cargoBuild instead of buildDepsOnly to avoid --all-targets
-  cargoArtifacts = craneLib.cargoBuild (
-    craneCommonArgs
-    // {
-      # Only build dependencies, not the main package
-      cargoBuildCommand = "cargo build --release --locked --workspace --exclude apollo-mcp-server";
-    }
-  );
+  cargoArtifacts = craneLib.buildDepsOnly craneCommonArgs;
 in {
   # Expose the list of build dependencies for inheriting in dev shells
   nativeDependencies = craneCommonArgs.nativeBuildInputs;
