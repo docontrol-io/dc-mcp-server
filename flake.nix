@@ -100,12 +100,11 @@
       packages = let
         # Cross targets for supported architectures
         cross = let
-          # Only Linux targets for CI builds
+          # Only native Linux builds for CI (no cross-compilation)
           # macOS builds are handled by the separate build.yml workflow
-          supportedTargets = [
-            "aarch64-unknown-linux-gnu"
-            "x86_64-unknown-linux-gnu"
-          ];
+          supportedTargets = if pkgs.stdenv.isLinux then [
+            pkgs.stdenv.hostPlatform.config
+          ] else [];
 
           crossBuild = target: let
             crossToolchain = toolchain.override {
