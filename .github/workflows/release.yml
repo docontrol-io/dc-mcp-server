@@ -1,0 +1,82 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g., v1.0.0)'
+        required: true
+        type: string
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo index
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/git
+          key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo build
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build and Test
+        run: |
+          cargo build --release --package apollo-mcp-server
+          cargo test --workspace
+          cargo clippy --all-targets --all-features -- -D warnings
+          cargo fmt --all -- --check
+
+      - name: Create release package
+        run: |
+          RELEASE_DIR="release"
+          BIN_NAME="apollo-mcp-server"
+          TARGET_DIR="target/release"
+          ARTIFACT_NAME="${BIN_NAME}-linux-x86_64"
+          VERSION=${{ github.event.inputs.tag || github.ref_name }}
+
+          mkdir -p "$RELEASE_DIR/$ARTIFACT_NAME"
+          cp "$TARGET_DIR/$BIN_NAME" "$RELEASE_DIR/$ARTIFACT_NAME/"
+          cp README.md LICENSE "$RELEASE_DIR/$ARTIFACT_NAME/"
+
+          # Create checksums
+          cd "$RELEASE_DIR/$ARTIFACT_NAME"
+          sha256sum "$BIN_NAME" > "${BIN_NAME}.sha256"
+          cd -
+
+          # Create tar.gz archive
+          tar -czvf "${ARTIFACT_NAME}.tar.gz" -C "$RELEASE_DIR" "$ARTIFACT_NAME"
+          tar -czvf "${ARTIFACT_NAME}-checksums.tar.gz" -C "$RELEASE_DIR/$ARTIFACT_NAME" "${BIN_NAME}.sha256"
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          name: Release ${{ github.event.inputs.tag || github.ref_name }}
+          files: |
+            *.tar.gz
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
