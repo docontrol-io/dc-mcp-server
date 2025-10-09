@@ -12,6 +12,12 @@
   toolchain,
   zig,
 }: let
+  # Use native toolchain for main builds - completely bypass original toolchain
+  nativeToolchain = pkgs.rust-bin.stable.latest.default;
+  
+  # Create a completely fresh crane lib with native toolchain
+  craneLib = (crane.mkLib pkgs).overrideToolchain nativeToolchain;
+
   graphqlFilter = path: _type: builtins.match ".*graphql$" path != null;
   testFilter = path: _type: builtins.match ".*snap$" path != null;
   srcFilter = path: type:
@@ -23,15 +29,6 @@
     filter = srcFilter;
     name = "source"; # Be reproducible, regardless of the directory name
   };
-
-  # Use native toolchain for main builds
-  nativeToolchain = pkgs.rust-bin.stable.latest.default;
-  
-  # Create a completely native crane lib with explicit native environment
-  nativeCraneLib = (crane.mkLib pkgs).overrideToolchain nativeToolchain;
-  
-  # Use the native crane lib for everything
-  craneLib = nativeCraneLib;
   craneCommonArgs = {
     inherit src;
     pname = "apollo-mcp";
@@ -54,7 +51,7 @@
   # Generate a derivation for just the dependencies of the project so that they
   # can be cached across all of the various checks and builders.
   # Use completely native crane lib to avoid any cross-compilation issues
-  cargoArtifacts = nativeCraneLib.buildDepsOnly (craneCommonArgs // {
+  cargoArtifacts = craneLib.buildDepsOnly (craneCommonArgs // {
     # Ensure we use native toolchain and don't cross-compile
     CARGO_BUILD_TARGET = pkgs.stdenv.hostPlatform.config;
     # Force native toolchain usage
