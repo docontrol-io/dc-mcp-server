@@ -100,7 +100,7 @@
       packages = let
         # Cross targets for supported architectures
         cross = let
-          # Only Ubuntu (Linux GNU) targets for now - macOS cross-compilation from Linux fails
+          # Only Linux targets for Ubuntu CI builds
           supportedTargets = [
             "aarch64-unknown-linux-gnu"
             "x86_64-unknown-linux-gnu"
