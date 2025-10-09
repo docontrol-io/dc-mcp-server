@@ -51,35 +51,40 @@
     };
   };
 
-  # Don't use cargoArtifacts - build everything fresh to avoid --all-targets issues
-  # cargoArtifacts = craneLib.cargoBuild (
-  #   craneCommonArgs
-  #   // {
-  #     doCheck = false;
-  #     cargoBuildCommand = "cargo build --release";
-  #   }
-  # );
+  # Generate a derivation for just the dependencies of the project so that they
+  # can be cached across all of the various checks and builders.
+  # Use cargoBuild with specific overrides to avoid --all-targets
+  cargoArtifacts = craneLib.cargoBuild (
+    craneCommonArgs
+    // {
+      doCheck = false;
+      cargoBuildCommand = "cargo build --release";
+      # Override to prevent --all-targets
+      cargoCheckCommand = "cargo check --release";
+      cargoExtraArgs = "";
+    }
+  );
 in {
   # Expose the list of build dependencies for inheriting in dev shells
   nativeDependencies = craneCommonArgs.nativeBuildInputs;
   dependencies = craneCommonArgs.buildInputs;
 
   # Expose derivations that should be cached in CI
-  # cache = [cargoArtifacts]; # Disabled to avoid --all-targets issues
+  cache = [cargoArtifacts];
 
   # Expose checks for the project used by the root nix flake
   checks = {
     clippy = craneLib.cargoClippy (
       craneCommonArgs
       // {
-        # inherit cargoArtifacts; # Removed to avoid --all-targets issues
+        inherit cargoArtifacts;
         cargoClippyExtraArgs = "-- --deny warnings";
       }
     );
     docs = craneLib.cargoDoc (
       craneCommonArgs
       // {
-        # inherit cargoArtifacts; # Removed to avoid --all-targets issues
+        inherit cargoArtifacts;
       }
     );
 
