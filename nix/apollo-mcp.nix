@@ -75,7 +75,7 @@
     CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_CC = "gcc";
     CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_CXX = "g++";
     # Override cargo command to avoid --all-targets which might cause cross-compilation
-    cargoCheckCommand = "cargo check --release --locked";
+    cargoCheckCommand = "cargo check --release";
   });
 in {
   # Expose the list of build dependencies for inheriting in dev shells
