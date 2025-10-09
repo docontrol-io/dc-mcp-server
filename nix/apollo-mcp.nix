@@ -59,8 +59,8 @@
     // {
       # Force native target only
       CARGO_BUILD_TARGET = pkgs.stdenv.hostPlatform.config;
-      # Override cargo check to be more specific
-      cargoCheckExtraArgs = "--release --target ${pkgs.stdenv.hostPlatform.config}";
+      # Override cargo check to specify target (crane already adds --release --locked)
+      cargoCheckExtraArgs = "--target ${pkgs.stdenv.hostPlatform.config}";
     }
   );
 in {
