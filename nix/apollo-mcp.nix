@@ -24,7 +24,9 @@
     name = "source"; # Be reproducible, regardless of the directory name
   };
 
-  craneLib = (crane.mkLib pkgs).overrideToolchain toolchain;
+  # Use native toolchain for main builds
+  nativeToolchain = pkgs.rust-bin.stable.latest.default;
+  craneLib = (crane.mkLib pkgs).overrideToolchain nativeToolchain;
   craneCommonArgs = {
     inherit src;
     pname = "apollo-mcp";
