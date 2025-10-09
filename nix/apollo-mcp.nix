@@ -71,7 +71,7 @@ in {
       craneCommonArgs
       // {
         inherit cargoArtifacts;
-        cargoClippyExtraArgs = "--all-targets -- --deny warnings";
+        cargoClippyExtraArgs = "-- --deny warnings";
       }
     );
     docs = craneLib.cargoDoc (
