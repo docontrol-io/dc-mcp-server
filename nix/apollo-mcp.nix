@@ -92,7 +92,8 @@ in {
   checks = {
     docs = (craneLib.overrideToolchain nativeToolchain).cargoDoc (craneCommonArgs
       // {
-        inherit cargoArtifacts;
+        # Don't inherit cargoArtifacts - build fresh dependencies
+        # inherit cargoArtifacts;
         # Apply same toolchain fixes as cargoArtifacts
         CARGO_BUILD_TARGET = pkgs.stdenv.hostPlatform.config;
         CC = "${pkgs.gcc}/bin/gcc";
