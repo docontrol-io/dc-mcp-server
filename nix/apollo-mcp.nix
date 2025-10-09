@@ -55,6 +55,8 @@
     // {
       # Override cargo command to avoid --all-targets which causes cross-compilation
       cargoCheckCommand = "cargo check --release";
+      # Also override cargoExtraArgs to ensure no --all-targets
+      cargoExtraArgs = "";
     }
   );
 in {
