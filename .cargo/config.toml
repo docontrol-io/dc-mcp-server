@@ -1,2 +1,22 @@
 [alias]
 xtask = "run --locked --package xtask --manifest-path xtask/Cargo.toml --"
+
+# Cross-compilation configuration
+[target.x86_64-unknown-linux-gnu]
+linker = "x86_64-linux-gnu-gcc"
+
+[target.aarch64-unknown-linux-gnu]
+linker = "aarch64-linux-gnu-gcc"
+
+[target.x86_64-unknown-linux-musl]
+linker = "x86_64-linux-musl-gcc"
+
+[target.aarch64-unknown-linux-musl]
+linker = "aarch64-linux-musl-gcc"
+
+# Build configuration for release
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
