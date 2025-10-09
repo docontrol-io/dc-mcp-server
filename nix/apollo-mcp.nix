@@ -34,7 +34,12 @@
     pname = "apollo-mcp";
     strictDeps = true;
 
-    nativeBuildInputs = [perl pkg-config];
+    nativeBuildInputs = [
+      perl 
+      pkg-config
+      pkgs.gcc
+      pkgs.gnumake
+    ];
     buildInputs = [];
 
     # Meta information about the packages
@@ -65,6 +70,12 @@
     OBJCOPY = "objcopy";
     OBJDUMP = "objdump";
     READELF = "readelf";
+    # Additional environment variables to prevent cross-compilation
+    CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER = "gcc";
+    CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_CC = "gcc";
+    CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_CXX = "g++";
+    # Override cargo command to avoid --all-targets which might cause cross-compilation
+    cargoCheckCommand = "cargo check --release --locked";
   });
 in {
   # Expose the list of build dependencies for inheriting in dev shells
