@@ -100,11 +100,8 @@
       packages = let
         # Cross targets for supported architectures
         cross = let
-          # Note: x86_64-apple-darwin doesn't yet work with zig due to an upstream bug
-          # Keeping only macOS and Ubuntu (Linux GNU) targets for now
+          # Only Ubuntu (Linux GNU) targets for now - macOS cross-compilation from Linux fails
           supportedTargets = [
-            "aarch64-apple-darwin"
-            "x86_64-apple-darwin"
             "aarch64-unknown-linux-gnu"
             "x86_64-unknown-linux-gnu"
           ];
