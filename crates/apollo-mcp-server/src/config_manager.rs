@@ -81,10 +81,9 @@ impl ConfigManager {
             })?;
 
         for line in config_content.lines() {
-            if line.contains("Authorization: Bearer") {
-                if let Some(token) = line.split("Bearer ").nth(1) {
-                    return Ok(Some(token.trim().to_string()));
-                }
+            if line.contains("Authorization: Bearer")
+                && let Some(token) = line.split("Bearer ").nth(1) {
+                return Ok(Some(token.trim().to_string()));
             }
         }
 

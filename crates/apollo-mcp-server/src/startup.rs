@@ -24,7 +24,7 @@ pub async fn initialize_with_token_refresh(
     })?;
 
     // Step 2: Initialize token manager
-    let mut token_manager = TokenManager::new(refresh_token, refresh_url);
+    let mut token_manager = TokenManager::new(refresh_token, refresh_url)?;
 
     // Step 3: Get fresh token
     let new_token = token_manager.get_valid_token().await.map_err(|e| {

@@ -28,33 +28,38 @@ pub struct TokenManager {
 }
 
 impl TokenManager {
-    pub fn new(refresh_token: String, refresh_url: String) -> Self {
-        Self {
+    pub fn new(refresh_token: String, refresh_url: String) -> Result<Self, McpError> {
+        let client = Client::builder()
+            .timeout(Duration::from_secs(30))
+            .connect_timeout(Duration::from_secs(10))
+            .user_agent("curl/8.4.0")
+            .danger_accept_invalid_certs(false)
+            .danger_accept_invalid_hostnames(false)
+            .build()
+            .map_err(|e| McpError::new(
+                ErrorCode::INTERNAL_ERROR,
+                format!("Failed to create HTTP client: {}", e),
+                None,
+            ))?;
+
+        Ok(Self {
             refresh_token,
             refresh_url,
             access_token: None,
             token_expires_at: None,
-            client: Client::builder()
-                .timeout(Duration::from_secs(30))
-                .connect_timeout(Duration::from_secs(10))
-                .user_agent("curl/8.4.0")
-                .danger_accept_invalid_certs(false)
-                .danger_accept_invalid_hostnames(false)
-                .build()
-                .expect("Failed to create HTTP client"),
-        }
+            client,
+        })
     }
 
     /// Get a valid access token, refreshing if necessary
     pub async fn get_valid_token(&mut self) -> Result<String, McpError> {
         // Check if we have a valid token
-        if let Some(token) = &self.access_token {
-            if let Some(expires_at) = self.token_expires_at {
-                // Refresh token 5 minutes before expiry
-                if expires_at.duration_since(Instant::now()) > Duration::from_secs(300) {
-                    debug!("Using existing valid token");
-                    return Ok(token.clone());
-                }
+        if let Some(token) = &self.access_token
+            && let Some(expires_at) = self.token_expires_at {
+            // Refresh token 5 minutes before expiry
+            if expires_at.duration_since(Instant::now()) > Duration::from_secs(300) {
+                debug!("Using existing valid token");
+                return Ok(token.clone());
             }
         }
 
