@@ -57,6 +57,17 @@
   cargoArtifacts = nativeCraneLib.buildDepsOnly (craneCommonArgs // {
     # Ensure we use native toolchain and don't cross-compile
     CARGO_BUILD_TARGET = pkgs.stdenv.hostPlatform.config;
+    # Force native toolchain usage
+    CC = "gcc";
+    CXX = "g++";
+    AR = "ar";
+    LD = "ld";
+    RANLIB = "ranlib";
+    STRIP = "strip";
+    NM = "nm";
+    OBJCOPY = "objcopy";
+    OBJDUMP = "objdump";
+    READELF = "readelf";
   });
 in {
   # Expose the list of build dependencies for inheriting in dev shells
