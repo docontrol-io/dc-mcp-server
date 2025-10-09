@@ -100,7 +100,8 @@
       packages = let
         # Cross targets for supported architectures
         cross = let
-          # Only Linux targets for Ubuntu CI builds
+          # Only Linux targets for CI builds
+          # macOS builds are handled by the separate build.yml workflow
           supportedTargets = [
             "aarch64-unknown-linux-gnu"
             "x86_64-unknown-linux-gnu"
