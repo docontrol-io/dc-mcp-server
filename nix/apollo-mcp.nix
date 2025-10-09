@@ -61,6 +61,10 @@
       CARGO_BUILD_TARGET = pkgs.stdenv.hostPlatform.config;
       # Override cargo check to specify target (crane already adds --release --locked)
       cargoCheckExtraArgs = "--target ${pkgs.stdenv.hostPlatform.config}";
+      # Override linker to use native gcc instead of cross-compilation linker
+      CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER = "gcc";
+      CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_CC = "gcc";
+      CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_CXX = "g++";
     }
   );
 in {
