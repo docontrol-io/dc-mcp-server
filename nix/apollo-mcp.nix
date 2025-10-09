@@ -49,15 +49,12 @@
 
   # Generate a derivation for just the dependencies of the project so that they
   # can be cached across all of the various checks and builders.
-  cargoArtifacts = craneLib.buildDepsOnly (
+  # Use cargoBuild instead of buildDepsOnly to avoid --all-targets
+  cargoArtifacts = craneLib.cargoBuild (
     craneCommonArgs
     // {
-      # Completely override the cargo check command to avoid --all-targets
-      cargoCheckCommand = "cargo check --release --locked";
-      # Override cargoExtraArgs to ensure no additional flags
-      cargoExtraArgs = "";
-      # Also override cargoBuildCommand to be safe
-      cargoBuildCommand = "cargo build --release --locked";
+      # Only build dependencies, not the main package
+      cargoBuildCommand = "cargo build --release --locked --workspace --exclude apollo-mcp-server";
     }
   );
 in {
