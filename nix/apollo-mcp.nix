@@ -94,10 +94,40 @@ in {
       // {
         inherit cargoArtifacts;
         cargoClippyExtraArgs = "--all-targets -- --deny warnings";
+        # Apply same toolchain fixes as cargoArtifacts
+        CARGO_BUILD_TARGET = pkgs.stdenv.hostPlatform.config;
+        CC = "${pkgs.gcc}/bin/gcc";
+        CXX = "${pkgs.gcc}/bin/g++";
+        AR = "${pkgs.binutils}/bin/ar";
+        LD = "${pkgs.binutils}/bin/ld";
+        RANLIB = "${pkgs.binutils}/bin/ranlib";
+        STRIP = "${pkgs.binutils}/bin/strip";
+        NM = "${pkgs.binutils}/bin/nm";
+        OBJCOPY = "${pkgs.binutils}/bin/objcopy";
+        OBJDUMP = "${pkgs.binutils}/bin/objdump";
+        READELF = "${pkgs.binutils}/bin/readelf";
+        CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER = "${pkgs.gcc}/bin/gcc";
+        CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_CC = "${pkgs.gcc}/bin/gcc";
+        CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_CXX = "${pkgs.gcc}/bin/g++";
       });
     docs = craneLib.cargoDoc (craneCommonArgs
       // {
         inherit cargoArtifacts;
+        # Apply same toolchain fixes as cargoArtifacts
+        CARGO_BUILD_TARGET = pkgs.stdenv.hostPlatform.config;
+        CC = "${pkgs.gcc}/bin/gcc";
+        CXX = "${pkgs.gcc}/bin/g++";
+        AR = "${pkgs.binutils}/bin/ar";
+        LD = "${pkgs.binutils}/bin/ld";
+        RANLIB = "${pkgs.binutils}/bin/ranlib";
+        STRIP = "${pkgs.binutils}/bin/strip";
+        NM = "${pkgs.binutils}/bin/nm";
+        OBJCOPY = "${pkgs.binutils}/bin/objcopy";
+        OBJDUMP = "${pkgs.binutils}/bin/objdump";
+        READELF = "${pkgs.binutils}/bin/readelf";
+        CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER = "${pkgs.gcc}/bin/gcc";
+        CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_CC = "${pkgs.gcc}/bin/gcc";
+        CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_CXX = "${pkgs.gcc}/bin/g++";
       });
 
     rustfmt = craneLib.cargoFmt {
