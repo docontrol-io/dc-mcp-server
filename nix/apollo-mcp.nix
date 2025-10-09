@@ -53,15 +53,14 @@
 
   # Generate a derivation for just the dependencies of the project so that they
   # can be cached across all of the various checks and builders.
-  # Use cargoBuild with specific overrides to avoid --all-targets
-  cargoArtifacts = craneLib.cargoBuild (
+  # Use buildDepsOnly with target override to avoid cross-compilation
+  cargoArtifacts = craneLib.buildDepsOnly (
     craneCommonArgs
     // {
-      doCheck = false;
-      cargoBuildCommand = "cargo build --release";
-      # Override to prevent --all-targets
-      cargoCheckCommand = "cargo check --release";
-      cargoExtraArgs = "";
+      # Force native target only
+      CARGO_BUILD_TARGET = pkgs.stdenv.hostPlatform.config;
+      # Override cargo check to be more specific
+      cargoCheckExtraArgs = "--release --target ${pkgs.stdenv.hostPlatform.config}";
     }
   );
 in {
