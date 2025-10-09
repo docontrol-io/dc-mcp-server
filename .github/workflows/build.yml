@@ -26,14 +26,8 @@ jobs:
           - target: aarch64-unknown-linux-gnu
             os: ubuntu-latest
             artifact-name: apollo-mcp-server-linux-aarch64
-          - target: x86_64-unknown-linux-musl
-            os: ubuntu-latest
-            artifact-name: apollo-mcp-server-linux-x86_64-musl
-          - target: aarch64-unknown-linux-musl
-            os: ubuntu-latest
-            artifact-name: apollo-mcp-server-linux-aarch64-musl
           
-          # macOS targets
+          # macOS targets (native builds only)
           - target: x86_64-apple-darwin
             os: macos-latest
             artifact-name: apollo-mcp-server-macos-x86_64
@@ -45,9 +39,6 @@ jobs:
           - target: x86_64-pc-windows-msvc
             os: windows-latest
             artifact-name: apollo-mcp-server-windows-x86_64.exe
-          - target: aarch64-pc-windows-msvc
-            os: windows-latest
-            artifact-name: apollo-mcp-server-windows-aarch64.exe
 
     steps:
     - name: Checkout code
