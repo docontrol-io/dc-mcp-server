@@ -27,6 +27,9 @@
   # Use native toolchain for main builds
   nativeToolchain = pkgs.rust-bin.stable.latest.default;
   craneLib = (crane.mkLib pkgs).overrideToolchain nativeToolchain;
+  
+  # Create a completely native crane lib for dependencies
+  nativeCraneLib = (crane.mkLib pkgs).overrideToolchain nativeToolchain;
   craneCommonArgs = {
     inherit src;
     pname = "apollo-mcp";
@@ -48,7 +51,8 @@
 
   # Generate a derivation for just the dependencies of the project so that they
   # can be cached across all of the various checks and builders.
-  cargoArtifacts = craneLib.buildDepsOnly craneCommonArgs;
+  # Use completely native crane lib to avoid any cross-compilation issues
+  cargoArtifacts = nativeCraneLib.buildDepsOnly craneCommonArgs;
 in {
   # Expose the list of build dependencies for inheriting in dev shells
   nativeDependencies = craneCommonArgs.nativeBuildInputs;
