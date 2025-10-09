@@ -1,0 +1,90 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-rc.[0-9]+"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g., v1.0.0)'
+        required: true
+        type: string
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  release:
+    name: Build and Release
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: stable
+        components: rustfmt, clippy
+
+    - name: Cache cargo registry
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/registry
+        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Cache cargo build
+      uses: actions/cache@v4
+      with:
+        path: target
+        key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y pkg-config libssl-dev
+
+    - name: Run tests
+      run: cargo test --verbose
+
+    - name: Run clippy
+      run: cargo clippy --all-targets --all-features -- -D warnings
+
+    - name: Check formatting
+      run: cargo fmt --all -- --check
+
+    - name: Build release
+      run: cargo build --release --package apollo-mcp-server
+
+    - name: Create release directory
+      run: |
+        mkdir -p release
+        cp target/release/apollo-mcp-server release/
+        cp README.md LICENSE release/
+
+    - name: Create checksums
+      run: |
+        cd release
+        sha256sum apollo-mcp-server > apollo-mcp-server.sha256
+
+    - name: Create release archive
+      run: |
+        cd release
+        tar -czf apollo-mcp-server-linux-x86_64.tar.gz apollo-mcp-server README.md LICENSE
+        tar -czf apollo-mcp-server-linux-x86_64-checksums.tar.gz apollo-mcp-server.sha256
+
+    - name: Create release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+        name: Release ${{ github.event.inputs.tag || github.ref_name }}
+        files: |
+          release/apollo-mcp-server-linux-x86_64.tar.gz
+          release/apollo-mcp-server-linux-x86_64-checksums.tar.gz
+        draft: false
+        prerelease: ${{ contains(github.ref_name, '-rc.') }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
