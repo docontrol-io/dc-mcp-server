@@ -90,7 +90,7 @@ in {
 
   # Expose checks for the project used by the root nix flake
   checks = {
-    clippy = craneLib.cargoClippy (craneCommonArgs
+    clippy = (craneLib.overrideToolchain nativeToolchain).cargoClippy (craneCommonArgs
       // {
         inherit cargoArtifacts;
         cargoClippyExtraArgs = "--all-targets -- --deny warnings";
@@ -109,8 +109,13 @@ in {
         CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER = "${pkgs.gcc}/bin/gcc";
         CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_CC = "${pkgs.gcc}/bin/gcc";
         CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_CXX = "${pkgs.gcc}/bin/g++";
+        # Ensure native build inputs are available
+        nativeBuildInputs = craneCommonArgs.nativeBuildInputs ++ [
+          pkgs.gcc
+          pkgs.binutils
+        ];
       });
-    docs = craneLib.cargoDoc (craneCommonArgs
+    docs = (craneLib.overrideToolchain nativeToolchain).cargoDoc (craneCommonArgs
       // {
         inherit cargoArtifacts;
         # Apply same toolchain fixes as cargoArtifacts
@@ -128,6 +133,11 @@ in {
         CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER = "${pkgs.gcc}/bin/gcc";
         CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_CC = "${pkgs.gcc}/bin/gcc";
         CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_CXX = "${pkgs.gcc}/bin/g++";
+        # Ensure native build inputs are available
+        nativeBuildInputs = craneCommonArgs.nativeBuildInputs ++ [
+          pkgs.gcc
+          pkgs.binutils
+        ];
       });
 
     rustfmt = craneLib.cargoFmt {
