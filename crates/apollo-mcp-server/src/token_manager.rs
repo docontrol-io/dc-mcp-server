@@ -37,7 +37,7 @@ impl TokenManager {
                 None,
             ));
         }
-        
+
         if refresh_url.trim().is_empty() {
             return Err(McpError::new(
                 ErrorCode::INVALID_PARAMS,
@@ -246,7 +246,6 @@ impl Clone for TokenManager {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -261,7 +260,7 @@ mod tests {
     async fn test_token_refresh_stores_in_memory() {
         let temp_dir = TempDir::new().unwrap();
         let config_path = temp_dir.path().join("test_config.yaml");
-        
+
         // Create initial config
         let initial_config = r#"
 endpoint: "https://api.example.com/graphql"
@@ -271,17 +270,18 @@ headers:
         fs::write(&config_path, initial_config).unwrap();
 
         let _config_manager = ConfigManager::new(config_path.to_string_lossy().to_string());
-        
+
         // Mock refresh URL (this would normally be a real endpoint)
         let refresh_url = "https://api.example.com/refresh";
         let refresh_token = "refresh_token_123";
-        
-        let token_manager = TokenManager::new(refresh_token.to_string(), refresh_url.to_string()).unwrap();
-        
+
+        let token_manager =
+            TokenManager::new(refresh_token.to_string(), refresh_url.to_string()).unwrap();
+
         // Initially no token in memory
         assert!(token_manager.access_token.is_none());
         assert!(token_manager.token_expires_at.is_none());
-        
+
         // Note: This test would need a mock server to actually test token refresh
         // For now, we test the structure and that it can be created
         assert_eq!(token_manager.refresh_token, refresh_token);
@@ -292,9 +292,12 @@ headers:
     #[test]
     fn test_token_manager_creation_error() {
         // Test with empty refresh token
-        let result = TokenManager::new("".to_string(), "https://api.example.com/refresh".to_string());
+        let result = TokenManager::new(
+            "".to_string(),
+            "https://api.example.com/refresh".to_string(),
+        );
         assert!(result.is_err());
-        
+
         // Test with empty refresh URL
         let result = TokenManager::new("refresh_token".to_string(), "".to_string());
         assert!(result.is_err());
@@ -305,13 +308,14 @@ headers:
     async fn test_token_expiry_logic() {
         let refresh_url = "https://api.example.com/refresh";
         let refresh_token = "refresh_token_123";
-        
-        let mut token_manager = TokenManager::new(refresh_token.to_string(), refresh_url.to_string()).unwrap();
-        
+
+        let mut token_manager =
+            TokenManager::new(refresh_token.to_string(), refresh_url.to_string()).unwrap();
+
         // Set a token that expires in the past
         token_manager.access_token = Some("test_token".to_string());
         token_manager.token_expires_at = Some(Instant::now() - Duration::from_secs(3600));
-        
+
         // Token should be considered expired
         let now = Instant::now();
         if let Some(expires_at) = token_manager.token_expires_at {
@@ -324,20 +328,26 @@ headers:
     fn test_token_manager_clone() {
         let refresh_url = "https://api.example.com/refresh";
         let refresh_token = "refresh_token_123";
-        
-        let mut token_manager = TokenManager::new(refresh_token.to_string(), refresh_url.to_string()).unwrap();
+
+        let mut token_manager =
+            TokenManager::new(refresh_token.to_string(), refresh_url.to_string()).unwrap();
         token_manager.access_token = Some("test_token".to_string());
         token_manager.token_expires_at = Some(Instant::now() + Duration::from_secs(3600));
-        
+
         let cloned_manager = token_manager.clone();
-        
-        assert_eq!(cloned_manager.refresh_token(), token_manager.refresh_token());
+
+        assert_eq!(
+            cloned_manager.refresh_token(),
+            token_manager.refresh_token()
+        );
         assert_eq!(cloned_manager.refresh_url(), token_manager.refresh_url());
         assert_eq!(cloned_manager.access_token(), token_manager.access_token());
-        assert_eq!(cloned_manager.token_expires_at(), token_manager.token_expires_at());
+        assert_eq!(
+            cloned_manager.token_expires_at(),
+            token_manager.token_expires_at()
+        );
     }
 }
-
 
 #[cfg(test)]
 impl TokenManager {
