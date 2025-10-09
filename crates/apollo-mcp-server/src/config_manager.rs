@@ -22,7 +22,7 @@ impl ConfigManager {
         // Create backup
         let timestamp = chrono::Utc::now().format("%Y%m%d_%H%M%S");
         let backup_path = format!("{}.backup.{}", self.config_path, timestamp);
-        
+
         if let Err(e) = fs::copy(&self.config_path, &backup_path) {
             warn!("Failed to create backup: {}", e);
         } else {
@@ -30,15 +30,14 @@ impl ConfigManager {
         }
 
         // Read current config
-        let config_content = fs::read_to_string(&self.config_path)
-            .map_err(|e| {
-                error!("Failed to read config file: {}", e);
-                McpError::new(
-                    ErrorCode::INTERNAL_ERROR,
-                    format!("Failed to read config file: {}", e),
-                    None,
-                )
-            })?;
+        let config_content = fs::read_to_string(&self.config_path).map_err(|e| {
+            error!("Failed to read config file: {}", e);
+            McpError::new(
+                ErrorCode::INTERNAL_ERROR,
+                format!("Failed to read config file: {}", e),
+                None,
+            )
+        })?;
 
         // Update authorization header
         let updated_content = config_content
@@ -54,15 +53,14 @@ impl ConfigManager {
             .join("\n");
 
         // Write updated config
-        fs::write(&self.config_path, updated_content)
-            .map_err(|e| {
-                error!("Failed to write updated config file: {}", e);
-                McpError::new(
-                    ErrorCode::INTERNAL_ERROR,
-                    format!("Failed to write updated config file: {}", e),
-                    None,
-                )
-            })?;
+        fs::write(&self.config_path, updated_content).map_err(|e| {
+            error!("Failed to write updated config file: {}", e);
+            McpError::new(
+                ErrorCode::INTERNAL_ERROR,
+                format!("Failed to write updated config file: {}", e),
+                None,
+            )
+        })?;
 
         info!("✅ Config file updated with new token");
         Ok(())
@@ -70,19 +68,19 @@ impl ConfigManager {
 
     /// Read the current authorization token from config file
     pub fn get_current_token(&self) -> Result<Option<String>, McpError> {
-        let config_content = fs::read_to_string(&self.config_path)
-            .map_err(|e| {
-                error!("Failed to read config file: {}", e);
-                McpError::new(
-                    ErrorCode::INTERNAL_ERROR,
-                    format!("Failed to read config file: {}", e),
-                    None,
-                )
-            })?;
+        let config_content = fs::read_to_string(&self.config_path).map_err(|e| {
+            error!("Failed to read config file: {}", e);
+            McpError::new(
+                ErrorCode::INTERNAL_ERROR,
+                format!("Failed to read config file: {}", e),
+                None,
+            )
+        })?;
 
         for line in config_content.lines() {
             if line.contains("Authorization: Bearer")
-                && let Some(token) = line.split("Bearer ").nth(1) {
+                && let Some(token) = line.split("Bearer ").nth(1)
+            {
                 return Ok(Some(token.trim().to_string()));
             }
         }
@@ -100,15 +98,14 @@ impl ConfigManager {
             ));
         }
 
-        fs::read_to_string(&self.config_path)
-            .map_err(|e| {
-                error!("Config file is not readable: {}", e);
-                McpError::new(
-                    ErrorCode::INTERNAL_ERROR,
-                    format!("Config file is not readable: {}", e),
-                    None,
-                )
-            })?;
+        fs::read_to_string(&self.config_path).map_err(|e| {
+            error!("Config file is not readable: {}", e);
+            McpError::new(
+                ErrorCode::INTERNAL_ERROR,
+                format!("Config file is not readable: {}", e),
+                None,
+            )
+        })?;
 
         debug!("Config file verified: {}", self.config_path);
         Ok(())

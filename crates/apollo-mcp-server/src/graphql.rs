@@ -89,29 +89,28 @@ pub trait Executable {
                 std::env::var("REQWEST_TIMEOUT")
                     .ok()
                     .and_then(|s| s.parse().ok())
-                    .unwrap_or(30)
+                    .unwrap_or(30),
             ))
             .connect_timeout(Duration::from_secs(
                 std::env::var("REQWEST_CONNECT_TIMEOUT")
                     .ok()
                     .and_then(|s| s.parse().ok())
-                    .unwrap_or(10)
+                    .unwrap_or(10),
             ))
             .user_agent(
-                std::env::var("REQWEST_USER_AGENT")
-                    .unwrap_or_else(|_| "curl/8.4.0".to_string())
+                std::env::var("REQWEST_USER_AGENT").unwrap_or_else(|_| "curl/8.4.0".to_string()),
             )
             .danger_accept_invalid_certs(
                 std::env::var("REQWEST_SSL_VERIFY")
                     .ok()
                     .map(|s| s == "false")
-                    .unwrap_or(false)
+                    .unwrap_or(false),
             )
             .danger_accept_invalid_hostnames(
                 std::env::var("REQWEST_SSL_VERIFY_HOSTNAME")
                     .ok()
                     .map(|s| s == "false")
-                    .unwrap_or(false)
+                    .unwrap_or(false),
             )
             .build()
             .map_err(|e| {
@@ -148,26 +147,28 @@ pub trait Executable {
         let json: Value = serde_json::from_str(&response_text).map_err(|reqwest_error| {
             McpError::new(
                 ErrorCode::INTERNAL_ERROR,
-                format!("Failed to parse JSON response (status: {}, body: {}): {reqwest_error}", status, response_text),
+                format!(
+                    "Failed to parse JSON response (status: {}, body: {}): {reqwest_error}",
+                    status, response_text
+                ),
                 None,
             )
         })?;
 
-        let result = Ok(json)
-            .map(|json| CallToolResult {
-                content: vec![Content::json(&json).unwrap_or(Content::text(json.to_string()))],
-                is_error: Some(
-                    json.get("errors")
+        let result = Ok(json).map(|json| CallToolResult {
+            content: vec![Content::json(&json).unwrap_or(Content::text(json.to_string()))],
+            is_error: Some(
+                json.get("errors")
+                    .filter(|value| !matches!(value, Value::Null))
+                    .is_some()
+                    && json
+                        .get("data")
                         .filter(|value| !matches!(value, Value::Null))
-                        .is_some()
-                        && json
-                            .get("data")
-                            .filter(|value| !matches!(value, Value::Null))
-                            .is_none(),
-                ),
-                meta: None,
-                structured_content: Some(json),
-            });
+                        .is_none(),
+            ),
+            meta: None,
+            structured_content: Some(json),
+        });
 
         // Record response metrics
         let attributes = vec![

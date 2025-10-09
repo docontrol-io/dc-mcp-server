@@ -39,10 +39,14 @@ pub async fn initialize_with_token_refresh(
     })?;
 
     // Step 5: Verify the new token
-    if !token_manager.verify_token(&new_token, &graphql_endpoint).await.map_err(|e| {
-        warn!("Token verification failed: {}", e);
-        e
-    })? {
+    if !token_manager
+        .verify_token(&new_token, &graphql_endpoint)
+        .await
+        .map_err(|e| {
+            warn!("Token verification failed: {}", e);
+            e
+        })?
+    {
         return Err(McpError::new(
             ErrorCode::INTERNAL_ERROR,
             "Token verification failed after refresh".to_string(),
