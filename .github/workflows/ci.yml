@@ -44,6 +44,10 @@ jobs:
           purge-created: 0
           purge-primary-key: never
           gc-max-store-size: 5G
+      - name: Install cross-compilation toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-x86-64-linux-gnu g++-x86-64-linux-gnu
       - name: Clear Nix cache to force rebuild
         run: nix-collect-garbage -d
 
@@ -70,6 +74,10 @@ jobs:
           purge-created: 0
           purge-primary-key: never
           gc-max-store-size: 5G
+      - name: Install cross-compilation toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-x86-64-linux-gnu g++-x86-64-linux-gnu
       - name: Clear Nix cache to force rebuild
         run: nix-collect-garbage -d
       - name: Run checks
@@ -98,6 +106,10 @@ jobs:
           purge-created: 0
           purge-primary-key: never
           gc-max-store-size: 5G
+      - name: Install cross-compilation toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-x86-64-linux-gnu g++-x86-64-linux-gnu
       - name: Clear Nix cache to force rebuild
         run: nix-collect-garbage -d
       - name: Build
@@ -126,6 +138,10 @@ jobs:
           purge-created: 0
           purge-primary-key: never
           gc-max-store-size: 5G
+      - name: Install cross-compilation toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-x86-64-linux-gnu g++-x86-64-linux-gnu
       - name: Clear Nix cache to force rebuild
         run: nix-collect-garbage -d
       - name: Run Tests
