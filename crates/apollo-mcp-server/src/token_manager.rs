@@ -336,28 +336,28 @@ headers:
         assert_eq!(cloned_manager.access_token(), token_manager.access_token());
         assert_eq!(cloned_manager.token_expires_at(), token_manager.token_expires_at());
     }
-}
 
+    impl TokenManager {
+        /// Get the refresh token (for testing)
+        pub fn refresh_token(&self) -> &str {
+            &self.refresh_token
+        }
 
-#[cfg(test)]
-impl TokenManager {
-    /// Get the refresh token (for testing)
-    pub fn refresh_token(&self) -> &str {
-        &self.refresh_token
-    }
+        /// Get the refresh URL (for testing)
+        pub fn refresh_url(&self) -> &str {
+            &self.refresh_url
+        }
 
-    /// Get the refresh URL (for testing)
-    pub fn refresh_url(&self) -> &str {
-        &self.refresh_url
-    }
+        /// Get the current access token (for testing)
+        pub fn access_token(&self) -> &Option<String> {
+            &self.access_token
+        }
 
-    /// Get the current access token (for testing)
-    pub fn access_token(&self) -> &Option<String> {
-        &self.access_token
-    }
-
-    /// Get the token expiry time (for testing)
-    pub fn token_expires_at(&self) -> &Option<Instant> {
-        &self.token_expires_at
+        /// Get the token expiry time (for testing)
+        pub fn token_expires_at(&self) -> &Option<Instant> {
+            &self.token_expires_at
+        }
     }
 }
+
+
