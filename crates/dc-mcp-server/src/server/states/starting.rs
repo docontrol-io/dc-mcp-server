@@ -139,7 +139,10 @@ impl Starting {
         let running = Running {
             schema,
             operations: Arc::new(Mutex::new(operations)),
-            headers: self.config.shared_headers.unwrap_or_else(|| Arc::new(RwLock::new(self.config.headers))),
+            headers: self
+                .config
+                .shared_headers
+                .unwrap_or_else(|| Arc::new(RwLock::new(self.config.headers))),
             endpoint: self.config.endpoint,
             execute_tool,
             introspect_tool,

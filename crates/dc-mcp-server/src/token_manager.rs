@@ -3,7 +3,7 @@
 use crate::config_manager::ConfigManager;
 use crate::errors::McpError;
 use reqwest::Client;
-use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
+use reqwest::header::{AUTHORIZATION, HeaderMap, HeaderValue};
 use rmcp::model::ErrorCode;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -187,7 +187,9 @@ impl TokenManager {
         // Update the shared headers if available
         if let Some(headers) = &self.headers {
             let mut headers_guard = headers.write().await;
-            if let Ok(header_value) = HeaderValue::from_str(&format!("Bearer {}", token_response.access_token)) {
+            if let Ok(header_value) =
+                HeaderValue::from_str(&format!("Bearer {}", token_response.access_token))
+            {
                 headers_guard.insert(AUTHORIZATION, header_value);
                 info!("✅ Refreshed token updated in shared headers");
             } else {
