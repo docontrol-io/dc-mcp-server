@@ -3,9 +3,11 @@
 use crate::config_manager::ConfigManager;
 use crate::errors::McpError;
 use crate::token_manager::TokenManager;
+use reqwest::header::HeaderMap;
 use rmcp::model::ErrorCode;
 use std::env;
 use std::sync::Arc;
+use tokio::sync::RwLock;
 use tracing::{debug, info, warn};
 
 /// Initialize the Apollo MCP Server with token refresh and environment setup
@@ -14,6 +16,7 @@ pub async fn initialize_with_token_refresh(
     refresh_token: String,
     refresh_url: String,
     graphql_endpoint: String,
+    shared_headers: Arc<RwLock<HeaderMap>>,
 ) -> Result<(), McpError> {
     info!("🎯 Apollo MCP Server initializing with token refresh...");
 
@@ -24,9 +27,10 @@ pub async fn initialize_with_token_refresh(
         e
     })?;
 
-    // Step 2: Initialize token manager with injected config manager
+    // Step 2: Initialize token manager with injected config manager and headers
     let mut token_manager = TokenManager::new(refresh_token, refresh_url)?;
     token_manager.set_config_manager(Arc::clone(&config_manager));
+    token_manager.set_headers(Arc::clone(&shared_headers));
 
     // Step 3: Get fresh token (will automatically write to config)
     let new_token = token_manager.get_valid_token().await.map_err(|e| {

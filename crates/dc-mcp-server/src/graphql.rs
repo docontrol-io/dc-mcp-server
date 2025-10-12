@@ -124,6 +124,7 @@ pub trait Executable {
         let response = client
             .post(request.endpoint.as_str())
             .headers(self.headers(&request.headers))
+            .header("Content-Type", "application/json")
             .body(Value::Object(request_body).to_string())
             .send()
             .await

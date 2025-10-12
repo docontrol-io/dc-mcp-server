@@ -3,10 +3,12 @@
 use crate::config_manager::ConfigManager;
 use crate::errors::McpError;
 use reqwest::Client;
+use reqwest::header::{AUTHORIZATION, HeaderMap, HeaderValue};
 use rmcp::model::ErrorCode;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
+use tokio::sync::RwLock;
 use tokio::time::sleep;
 use tracing::{debug, error, info, warn};
 
@@ -31,6 +33,7 @@ pub struct TokenManager {
     token_expires_at: Option<Instant>,
     client: Client,
     config_manager: Option<Arc<ConfigManager>>,
+    headers: Option<Arc<RwLock<HeaderMap>>>,
 }
 
 impl TokenManager {
@@ -74,12 +77,18 @@ impl TokenManager {
             token_expires_at: None,
             client,
             config_manager: None,
+            headers: None,
         })
     }
 
     /// Inject the config manager for automatic token persistence
     pub fn set_config_manager(&mut self, config_manager: Arc<ConfigManager>) {
         self.config_manager = Some(config_manager);
+    }
+
+    /// Inject the shared headers for automatic token updates
+    pub fn set_headers(&mut self, headers: Arc<RwLock<HeaderMap>>) {
+        self.headers = Some(headers);
     }
 
     /// Get a valid access token, refreshing if necessary
@@ -166,13 +175,34 @@ impl TokenManager {
             info!("✅ Successfully refreshed access token (expires in 1h)");
         }
 
+        // Create the header value first to ensure it's valid
+        let header_value =
+            HeaderValue::from_str(&format!("Bearer {}", token_response.access_token)).map_err(
+                |e| {
+                    McpError::new(
+                        ErrorCode::INTERNAL_ERROR,
+                        format!("Failed to create header value from token: {}", e),
+                        None,
+                    )
+                },
+            )?;
+
         // Write the token to config file if config manager is set
         if let Some(config_manager) = &self.config_manager {
-            if let Err(e) = config_manager.update_auth_token(&token_response.access_token) {
-                warn!("Failed to write refreshed token to config file: {}", e);
-            } else {
-                info!("✅ Refreshed token written to config file");
-            }
+            config_manager
+                .update_auth_token(&token_response.access_token)
+                .map_err(|e| {
+                    error!("Failed to write refreshed token to config file: {}", e);
+                    e
+                })?;
+            info!("✅ Refreshed token written to config file");
+        }
+
+        // Update the shared headers if available
+        if let Some(headers) = &self.headers {
+            let mut headers_guard = headers.write().await;
+            headers_guard.insert(AUTHORIZATION, header_value);
+            info!("✅ Refreshed token updated in shared headers");
         }
 
         Ok(token_response.access_token)
@@ -266,6 +296,7 @@ impl Clone for TokenManager {
             token_expires_at: self.token_expires_at,
             client: self.client.clone(),
             config_manager: self.config_manager.clone(),
+            headers: self.headers.clone(),
         }
     }
 }

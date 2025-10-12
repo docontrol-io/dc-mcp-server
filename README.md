@@ -43,55 +43,244 @@ DC_API_KEY="service:docontrol-api:your-apollo-key"
 Create a YAML configuration file (e.g., `config.yaml`):
 
 ```yaml
-# GraphQL endpoint
-endpoint: "https://apollo-gateway-v4-api.prod.docontrol.io/graphql"
+# GraphQL endpoint URL
+endpoint: https://apollo-gateway-v4-api.prod.docontrol.io/graphql
 
-# Apollo GraphOS configuration
+# Transport configuration (stdio for MCP)
+transport:
+  type: stdio
+
+# Authentication headers (automatically managed by token refresh)
+headers:
+  Authorization: Bearer <token-will-be-auto-refreshed>
+
+# Apollo GraphOS integration
 graphos:
-  apollo_key: "${DC_API_KEY}"  # From environment variable
+  apollo-graph-ref: docontrol-api@current
+  apollo-key: service:docontrol-api:your-apollo-key
 
-# Use introspection to discover operations
-operations: introspect
+# Mutation mode: "none" (read-only), "all" (full access)
+allow-mutations: none
 
-# Enable introspection
+# Operation source: use introspection to discover operations
+operations:
+  - introspect
+
+# Logging configuration
+logging:
+  level: error
+  format: plain
+  color: false
+
+# Introspection tools configuration
 introspection:
-  query: true
-  mutation: true
+  execute:
+    enabled: true    # Enable execute tool to run queries
+  introspect:
+    enabled: true    # Enable introspect tool for schema discovery
+    minify: true     # Minify schema output
+  search:
+    enabled: true    # Enable search tool for finding types
+    minify: true     # Minify search results
+    index_memory_bytes: 50000000  # Memory limit for search index
+    leaf_depth: 1    # Depth for leaf type expansion
+  validate:
+    enabled: true    # Enable validate tool for query validation
 ```
 
-**Note**: The `apollo_graph_ref` is hardcoded in the source code as `docontrol-api@current`. You can override it by setting the `DC_GRAPH_REF` environment variable if needed.
+#### Configuration Options Explained
 
-**Note**: The `auth` section in the config file is automatically managed by the token refresh system. You don't need to manually specify it.
+**Core Settings:**
+- `endpoint`: The DoControl GraphQL API endpoint
+- `transport.type`: `stdio` for MCP communication (required for MCP clients)
 
-**Introspection Mode**: The server will introspect the GraphQL schema and automatically expose all queries and mutations as MCP tools. No need to manually define operations!
+**Authentication:**
+- `headers.Authorization`: Automatically updated by token refresh system
+- The token in this section is managed by the server - it will be overwritten on startup and during refresh
 
-## MCP Client Configuration
+**GraphOS Integration:**
+- `apollo-graph-ref`: Your graph reference in Apollo Studio (e.g., `docontrol-api@current`)
+- `apollo-key`: Your Apollo Studio API key for schema registry access
 
-### Cursor/Claude Desktop
+**Security:**
+- `allow-mutations`: Set to `none` for read-only access, `all` to allow mutations
 
-Add this to your MCP configuration file:
-- **Cursor**: `~/.cursor/mcp.json`
-- **Claude Desktop**: `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
+**Operations:**
+- `introspect`: Use introspection to discover all queries and mutations automatically
+- Alternative: `uplink` to use Apollo Studio operation collections
+
+**Introspection Tools:**
+The server provides 4 MCP tools when introspection is enabled:
+
+1. **`execute`**: Run GraphQL queries and mutations
+   - Validates operation syntax
+   - Executes against the live endpoint
+   - Returns JSON results
+
+2. **`introspect`**: Explore the GraphQL schema
+   - Get type information with hierarchy
+   - Discover fields, arguments, and descriptions
+   - Navigate relationships between types
+
+3. **`search`**: Find types in the schema by name
+   - Fuzzy search across all types
+   - Returns matching type definitions
+   - Useful for discovery
+
+4. **`validate`**: Validate GraphQL operations before execution
+   - Syntax checking
+   - Schema validation
+   - Helpful for debugging
+
+**Note**: The `apollo_key` can reference environment variables using `${DC_API_KEY}` syntax.
+
+**Note**: The `Authorization` header is automatically managed by the token refresh system. You don't need to manually update it.
+
+## Quick Start Setup Guide
+
+### Step 1: Install the Server
+
+**Option A: Download from Releases**
+```bash
+# macOS (Apple Silicon)
+curl -L https://github.com/docontrol-io/dc-mcp-server/releases/latest/download/dc-mcp-server-macos-aarch64.tar.gz | tar xz
+chmod +x dc-mcp-server
+
+# Linux
+curl -L https://github.com/docontrol-io/dc-mcp-server/releases/latest/download/dc-mcp-server-linux-x86_64.tar.gz | tar xz
+chmod +x dc-mcp-server
+
+# Move to a permanent location
+sudo mv dc-mcp-server /usr/local/bin/
+```
+
+**Option B: Build from Source**
+```bash
+git clone https://github.com/docontrol-io/dc-mcp-server.git
+cd dc-mcp-server
+cargo build --release
+sudo cp target/release/dc-mcp-server /usr/local/bin/
+```
+
+### Step 2: Create Configuration File
+
+Create a file named `docontrol-config.yaml`:
+
+```yaml
+endpoint: https://apollo-gateway-v4-api.prod.docontrol.io/graphql
+transport:
+  type: stdio
+headers:
+  Authorization: Bearer placeholder  # Will be auto-updated
+graphos:
+  apollo-graph-ref: docontrol-api@current
+  apollo-key: service:docontrol-api:YOUR_APOLLO_KEY_HERE
+allow-mutations: none
+operations:
+  - introspect
+logging:
+  level: error
+  format: plain
+  color: false
+introspection:
+  execute:
+    enabled: true
+  introspect:
+    enabled: true
+    minify: true
+  search:
+    enabled: true
+    minify: true
+  validate:
+    enabled: true
+```
+
+**Replace `YOUR_APOLLO_KEY_HERE`** with your actual Apollo Studio API key.
+
+### Step 3: Get Your Credentials
+
+You'll need two secrets from DoControl:
+
+1. **Refresh Token** (`DC_REFRESH_TOKEN`):
+   - Obtain from DoControl OAuth authentication flow
+   - This is a long-lived token used to get fresh access tokens
+   - Keep this secret secure!
+
+2. **Apollo API Key** (`DC_API_KEY`):
+   - Format: `service:docontrol-api:xxxxx`
+   - Used to access Apollo Studio for schema registry
+
+### Step 4: Configure Your MCP Client
+
+**For Cursor:**
+
+Edit `~/.cursor/mcp.json`:
 
 ```json
 {
   "mcpServers": {
-    "docontrol": {
-      "command": "/path/to/dc-mcp-server",
-      "args": ["/path/to/config.yaml"],
+    "dc-mcp-server": {
+      "command": "/usr/local/bin/dc-mcp-server",
+      "args": ["/absolute/path/to/docontrol-config.yaml"],
       "env": {
         "DC_TOKEN_REFRESH_ENABLED": "true",
-        "DC_REFRESH_TOKEN": "your-refresh-token",
+        "DC_REFRESH_TOKEN": "YOUR_REFRESH_TOKEN_HERE",
         "DC_REFRESH_URL": "https://auth.prod.docontrol.io/refresh",
         "DC_GRAPHQL_ENDPOINT": "https://apollo-gateway-v4-api.prod.docontrol.io/graphql",
-        "DC_GRAPH_REF": "docontrol-api@current",
-        "DC_API_KEY": "service:docontrol-api:your-key",
-        "RUST_LOG": "info"
+        "DC_API_KEY": "service:docontrol-api:YOUR_KEY_HERE",
+        "RUST_LOG": "info",
+        "RUSTLS_SYSTEM_CERT_ROOT": "1"
       }
     }
   }
 }
 ```
+
+**For Claude Desktop (macOS):**
+
+Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "dc-mcp-server": {
+      "command": "/usr/local/bin/dc-mcp-server",
+      "args": ["/absolute/path/to/docontrol-config.yaml"],
+      "env": {
+        "DC_TOKEN_REFRESH_ENABLED": "true",
+        "DC_REFRESH_TOKEN": "YOUR_REFRESH_TOKEN_HERE",
+        "DC_REFRESH_URL": "https://auth.prod.docontrol.io/refresh",
+        "DC_GRAPHQL_ENDPOINT": "https://apollo-gateway-v4-api.prod.docontrol.io/graphql",
+        "DC_API_KEY": "service:docontrol-api:YOUR_KEY_HERE",
+        "RUST_LOG": "info",
+        "RUSTLS_SYSTEM_CERT_ROOT": "1"
+      }
+    }
+  }
+}
+```
+
+**Important Notes:**
+- Use **absolute paths** for both the command and config file
+- Replace `YOUR_REFRESH_TOKEN_HERE` and `YOUR_KEY_HERE` with actual values
+- The `RUSTLS_SYSTEM_CERT_ROOT=1` is required for SSL certificate validation
+
+### Step 5: Restart Your MCP Client
+
+- **Cursor**: Restart the application or reload the window
+- **Claude Desktop**: Quit and restart the application
+
+### Step 6: Verify Setup
+
+In your MCP client, you should see 4 new tools available:
+- ✅ `execute` - Run GraphQL queries
+- ✅ `introspect` - Explore the schema
+- ✅ `search` - Search for types
+- ✅ `validate` - Validate queries
+
+Try asking: "What is the company information?" or "Show me the company details"
+
+## MCP Client Configuration Reference
 
 ### Using with MCP Inspector
 

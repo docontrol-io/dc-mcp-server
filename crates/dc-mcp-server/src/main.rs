@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use apollo_mcp_registry::platform_api::operation_collections::collection_poller::CollectionSource;
 use apollo_mcp_registry::uplink::persisted_queries::ManifestSource;
@@ -12,6 +13,7 @@ use dc_mcp_server::operations::OperationSource;
 use dc_mcp_server::server::Server;
 use dc_mcp_server::startup;
 use runtime::IdOrDefault;
+use tokio::sync::RwLock;
 use tracing::{info, warn};
 
 mod runtime;
@@ -41,7 +43,7 @@ async fn main() -> anyhow::Result<()> {
     let config_path = args.config.clone();
 
     // Read config for initial setup (telemetry)
-    let mut config: runtime::Config = match config_path.clone() {
+    let config: runtime::Config = match config_path.clone() {
         Some(ref path) => runtime::read_config(path.clone())?,
         None => runtime::read_config_from_env().unwrap_or_default(),
     };
@@ -52,6 +54,9 @@ async fn main() -> anyhow::Result<()> {
         "Apollo MCP Server v{} // (c) Apollo Graph, Inc. // Licensed under MIT",
         env!("CARGO_PKG_VERSION")
     );
+
+    // Create shared headers that can be updated by token refresh
+    let shared_headers = Arc::new(RwLock::new(config.headers.clone()));
 
     // Check if token refresh is enabled
     if startup::is_token_refresh_enabled() {
@@ -67,14 +72,14 @@ async fn main() -> anyhow::Result<()> {
                 refresh_token,
                 refresh_url,
                 graphql_endpoint,
+                Arc::clone(&shared_headers),
             )
             .await
             {
                 warn!("Token refresh initialization failed: {}", e);
             } else {
-                // Re-read config to get the refreshed token
-                info!("Re-reading config file to load refreshed token...");
-                config = runtime::read_config(config_file.clone())?;
+                // Token has been refreshed and shared_headers updated by initialize_with_token_refresh
+                info!("✅ Token refresh initialization complete");
             }
         } else {
             warn!("Token refresh enabled but missing required environment variables");
@@ -141,13 +146,17 @@ async fn main() -> anyhow::Result<()> {
 
     let transport = config.transport.clone();
 
+    // Read current headers from shared state
+    let current_headers = shared_headers.read().await.clone();
+
     Ok(Server::builder()
         .transport(config.transport)
         .schema_source(schema_source)
         .operation_source(operation_source)
         .endpoint(config.endpoint.into_inner())
         .maybe_explorer_graph_ref(explorer_graph_ref)
-        .headers(config.headers)
+        .headers(current_headers)
+        .maybe_shared_headers(Some(shared_headers))
         .execute_introspection(config.introspection.execute.enabled)
         .validate_introspection(config.introspection.validate.enabled)
         .introspect_introspection(config.introspection.introspect.enabled)

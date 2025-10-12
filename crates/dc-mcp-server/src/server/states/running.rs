@@ -43,7 +43,7 @@ use crate::{
 pub(super) struct Running {
     pub(super) schema: Arc<Mutex<Valid<Schema>>>,
     pub(super) operations: Arc<Mutex<Vec<Operation>>>,
-    pub(super) headers: HeaderMap,
+    pub(super) headers: Arc<RwLock<HeaderMap>>,
     pub(super) endpoint: Url,
     pub(super) execute_tool: Option<Execute>,
     pub(super) introspect_tool: Option<Introspect>,
@@ -235,7 +235,7 @@ impl ServerHandler for Running {
                     .await
             }
             EXECUTE_TOOL_NAME => {
-                let mut headers = self.headers.clone();
+                let mut headers = self.headers.read().await.clone();
                 if let Some(axum_parts) = context.extensions.get::<axum::http::request::Parts>() {
                     // Optionally extract the validated token and propagate it to upstream servers if present
                     if !self.disable_auth_token_passthrough
@@ -268,7 +268,7 @@ impl ServerHandler for Running {
                     .await
             }
             _ => {
-                let mut headers = self.headers.clone();
+                let mut headers = self.headers.read().await.clone();
                 if let Some(axum_parts) = context.extensions.get::<axum::http::request::Parts>() {
                     // Optionally extract the validated token and propagate it to upstream servers if present
                     if !self.disable_auth_token_passthrough
@@ -407,7 +407,7 @@ mod tests {
         let running = Running {
             schema: Arc::new(Mutex::new(schema)),
             operations: Arc::new(Mutex::new(vec![])),
-            headers: HeaderMap::new(),
+            headers: Arc::new(RwLock::new(HeaderMap::new())),
             endpoint: "http://localhost:4000".parse().unwrap(),
             execute_tool: None,
             introspect_tool: None,
