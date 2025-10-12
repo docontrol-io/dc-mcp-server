@@ -19,11 +19,14 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            artifact_name: apollo-mcp-server-linux-x86_64
-            binary_path: target/release/apollo-mcp-server
+            artifact_name: dc-mcp-server-linux-x86_64
+            binary_path: target/release/dc-mcp-server
           - os: macos-latest
-            artifact_name: apollo-mcp-server-macos-aarch64
-            binary_path: target/release/apollo-mcp-server
+            artifact_name: dc-mcp-server-macos-aarch64
+            binary_path: target/release/dc-mcp-server
+          - os: windows-latest
+            artifact_name: dc-mcp-server-windows-x86_64
+            binary_path: target/release/dc-mcp-server.exe
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -53,7 +56,7 @@ jobs:
 
       - name: Build and Test
         run: |
-          cargo build --release --package apollo-mcp-server
+          cargo build --release --package dc-mcp-server
           cargo test --workspace
           cargo clippy --all-targets --all-features -- -D warnings
           cargo fmt --all -- --check
@@ -62,21 +65,21 @@ jobs:
         shell: bash
         run: |
           RELEASE_DIR="release"
-          BIN_NAME="apollo-mcp-server"
-          TARGET_DIR="target/release"
+          BIN_NAME="${{ matrix.binary_path }}"
           ARTIFACT_NAME="${{ matrix.artifact_name }}"
           VERSION=${{ github.event.inputs.tag || github.ref_name }}
 
           mkdir -p "$RELEASE_DIR/$ARTIFACT_NAME"
-          cp "$TARGET_DIR/$BIN_NAME" "$RELEASE_DIR/$ARTIFACT_NAME/"
+          cp "$BIN_NAME" "$RELEASE_DIR/$ARTIFACT_NAME/"
           cp README.md LICENSE "$RELEASE_DIR/$ARTIFACT_NAME/" 2>/dev/null || true
 
           # Create checksums
           cd "$RELEASE_DIR/$ARTIFACT_NAME"
+          BINARY_FILE=$(basename "$BIN_NAME")
           if command -v sha256sum &> /dev/null; then
-            sha256sum "$BIN_NAME" > "${BIN_NAME}.sha256"
+            sha256sum "$BINARY_FILE" > "${BINARY_FILE}.sha256"
           else
-            shasum -a 256 "$BIN_NAME" > "${BIN_NAME}.sha256"
+            shasum -a 256 "$BINARY_FILE" > "${BINARY_FILE}.sha256"
           fi
           cd -
 

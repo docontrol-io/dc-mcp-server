@@ -1,5 +1,5 @@
 [package]
-name = "apollo-mcp-server"
+name = "dc-mcp-server"
 authors.workspace = true
 edition.workspace = true
 license-file.workspace = true
@@ -8,7 +8,7 @@ rust-version.workspace = true
 version.workspace = true
 build = "build.rs"
 
-default-run = "apollo-mcp-server"
+default-run = "dc-mcp-server"
 
 [dependencies]
 anyhow = "1.0.98"
@@ -95,7 +95,7 @@ toml = "0.9.5"
 workspace = true
 
 [[bin]]
-name = "apollo-mcp-server"
+name = "dc-mcp-server"
 path = "src/main.rs"
 
 [[bin]]

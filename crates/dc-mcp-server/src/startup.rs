@@ -98,7 +98,7 @@ fn setup_environment_variables() {
 
 /// Check if token refresh is enabled via environment variables
 pub fn is_token_refresh_enabled() -> bool {
-    env::var("APOLLO_TOKEN_REFRESH_ENABLED")
+    env::var("DC_TOKEN_REFRESH_ENABLED")
         .ok()
         .map(|s| s == "true")
         .unwrap_or(false)
@@ -106,17 +106,17 @@ pub fn is_token_refresh_enabled() -> bool {
 
 /// Get refresh token from environment
 pub fn get_refresh_token() -> Option<String> {
-    env::var("APOLLO_REFRESH_TOKEN").ok()
+    env::var("DC_REFRESH_TOKEN").ok()
 }
 
 /// Get refresh URL from environment
 pub fn get_refresh_url() -> Option<String> {
-    env::var("APOLLO_REFRESH_URL").ok()
+    env::var("DC_REFRESH_URL").ok()
 }
 
 /// Get GraphQL endpoint from environment
 pub fn get_graphql_endpoint() -> Option<String> {
-    env::var("APOLLO_GRAPHQL_ENDPOINT").ok()
+    env::var("DC_GRAPHQL_ENDPOINT").ok()
 }
 
 #[cfg(test)]
@@ -145,9 +145,9 @@ headers:
 
         // Test environment variable setup
         unsafe {
-            std::env::set_var("APOLLO_REFRESH_TOKEN", "test_refresh_token");
-            std::env::set_var("APOLLO_REFRESH_URL", "https://api.example.com/refresh");
-            std::env::set_var("APOLLO_GRAPHQL_ENDPOINT", "https://api.example.com/graphql");
+            std::env::set_var("DC_REFRESH_TOKEN", "test_refresh_token");
+            std::env::set_var("DC_REFRESH_URL", "https://api.example.com/refresh");
+            std::env::set_var("DC_GRAPHQL_ENDPOINT", "https://api.example.com/graphql");
         }
 
         // Test getting refresh token from environment
@@ -170,9 +170,9 @@ headers:
 
         // Clean up environment variables
         unsafe {
-            std::env::remove_var("APOLLO_REFRESH_TOKEN");
-            std::env::remove_var("APOLLO_REFRESH_URL");
-            std::env::remove_var("APOLLO_GRAPHQL_ENDPOINT");
+            std::env::remove_var("DC_REFRESH_TOKEN");
+            std::env::remove_var("DC_REFRESH_URL");
+            std::env::remove_var("DC_GRAPHQL_ENDPOINT");
         }
     }
 
@@ -181,8 +181,8 @@ headers:
     async fn test_initialization_missing_env_vars() {
         // Ensure environment variables are not set
         unsafe {
-            std::env::remove_var("APOLLO_REFRESH_TOKEN");
-            std::env::remove_var("APOLLO_REFRESH_URL");
+            std::env::remove_var("DC_REFRESH_TOKEN");
+            std::env::remove_var("DC_REFRESH_URL");
         }
 
         // Test getting missing refresh token
