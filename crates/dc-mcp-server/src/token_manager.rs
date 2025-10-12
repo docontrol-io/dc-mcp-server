@@ -1,9 +1,11 @@
 //! Token refresh functionality for Apollo MCP Server
 
+use crate::config_manager::ConfigManager;
 use crate::errors::McpError;
 use reqwest::Client;
 use rmcp::model::ErrorCode;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::time::sleep;
 use tracing::{debug, error, info, warn};
@@ -28,6 +30,7 @@ pub struct TokenManager {
     access_token: Option<String>,
     token_expires_at: Option<Instant>,
     client: Client,
+    config_manager: Option<Arc<ConfigManager>>,
 }
 
 impl TokenManager {
@@ -70,7 +73,13 @@ impl TokenManager {
             access_token: None,
             token_expires_at: None,
             client,
+            config_manager: None,
         })
+    }
+
+    /// Inject the config manager for automatic token persistence
+    pub fn set_config_manager(&mut self, config_manager: Arc<ConfigManager>) {
+        self.config_manager = Some(config_manager);
     }
 
     /// Get a valid access token, refreshing if necessary
@@ -157,6 +166,15 @@ impl TokenManager {
             info!("✅ Successfully refreshed access token (expires in 1h)");
         }
 
+        // Write the token to config file if config manager is set
+        if let Some(config_manager) = &self.config_manager {
+            if let Err(e) = config_manager.update_auth_token(&token_response.access_token) {
+                warn!("Failed to write refreshed token to config file: {}", e);
+            } else {
+                info!("✅ Refreshed token written to config file");
+            }
+        }
+
         Ok(token_response.access_token)
     }
 
@@ -213,7 +231,7 @@ impl TokenManager {
     }
 
     /// Start background token refresh task
-    pub async fn start_refresh_task(&mut self, graphql_endpoint: String, config_path: String) {
+    pub async fn start_refresh_task(&mut self, graphql_endpoint: String) {
         let mut token_manager = self.clone();
 
         tokio::spawn(async move {
@@ -227,14 +245,7 @@ impl TokenManager {
                         {
                             error!("Token verification failed in background task: {}", e);
                         } else {
-                            // Write the refreshed token back to the config file
-                            use crate::config_manager::ConfigManager;
-                            let config_manager = ConfigManager::new(config_path.clone());
-                            if let Err(e) = config_manager.update_auth_token(&token) {
-                                error!("Failed to write refreshed token to config file: {}", e);
-                            } else {
-                                info!("✅ Background task: refreshed token written to config file");
-                            }
+                            info!("✅ Background task: token refreshed and verified");
                         }
                     }
                     Err(e) => {
@@ -254,6 +265,7 @@ impl Clone for TokenManager {
             access_token: self.access_token.clone(),
             token_expires_at: self.token_expires_at,
             client: self.client.clone(),
+            config_manager: self.config_manager.clone(),
         }
     }
 }
