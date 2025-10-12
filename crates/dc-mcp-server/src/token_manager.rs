@@ -175,26 +175,31 @@ impl TokenManager {
             info!("✅ Successfully refreshed access token (expires in 1h)");
         }
 
+        // Create the header value first to ensure it's valid
+        let header_value = HeaderValue::from_str(&format!("Bearer {}", token_response.access_token))
+            .map_err(|e| {
+                McpError::new(
+                    ErrorCode::INTERNAL_ERROR,
+                    format!("Failed to create header value from token: {}", e),
+                    None,
+                )
+            })?;
+
         // Write the token to config file if config manager is set
         if let Some(config_manager) = &self.config_manager {
-            if let Err(e) = config_manager.update_auth_token(&token_response.access_token) {
-                warn!("Failed to write refreshed token to config file: {}", e);
-            } else {
-                info!("✅ Refreshed token written to config file");
-            }
+            config_manager.update_auth_token(&token_response.access_token)
+                .map_err(|e| {
+                    error!("Failed to write refreshed token to config file: {}", e);
+                    e
+                })?;
+            info!("✅ Refreshed token written to config file");
         }
 
         // Update the shared headers if available
         if let Some(headers) = &self.headers {
             let mut headers_guard = headers.write().await;
-            if let Ok(header_value) =
-                HeaderValue::from_str(&format!("Bearer {}", token_response.access_token))
-            {
-                headers_guard.insert(AUTHORIZATION, header_value);
-                info!("✅ Refreshed token updated in shared headers");
-            } else {
-                warn!("Failed to create header value from token");
-            }
+            headers_guard.insert(AUTHORIZATION, header_value);
+            info!("✅ Refreshed token updated in shared headers");
         }
 
         Ok(token_response.access_token)
