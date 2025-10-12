@@ -5,6 +5,7 @@ use crate::errors::McpError;
 use crate::token_manager::TokenManager;
 use rmcp::model::ErrorCode;
 use std::env;
+use std::sync::Arc;
 use tracing::{debug, info, warn};
 
 /// Initialize the Apollo MCP Server with token refresh and environment setup
@@ -16,29 +17,24 @@ pub async fn initialize_with_token_refresh(
 ) -> Result<(), McpError> {
     info!("🎯 Apollo MCP Server initializing with token refresh...");
 
-    // Step 1: Verify config file
-    let config_manager = ConfigManager::new(config_path.clone());
+    // Step 1: Create shared config manager
+    let config_manager = Arc::new(ConfigManager::new(config_path.clone()));
     config_manager.verify_config().map_err(|e| {
         warn!("Config verification failed: {}", e);
         e
     })?;
 
-    // Step 2: Initialize token manager
+    // Step 2: Initialize token manager with injected config manager
     let mut token_manager = TokenManager::new(refresh_token, refresh_url)?;
+    token_manager.set_config_manager(Arc::clone(&config_manager));
 
-    // Step 3: Get fresh token
+    // Step 3: Get fresh token (will automatically write to config)
     let new_token = token_manager.get_valid_token().await.map_err(|e| {
         warn!("Token refresh failed: {}", e);
         e
     })?;
 
-    // Step 4: Update config file with new token
-    config_manager.update_auth_token(&new_token).map_err(|e| {
-        warn!("Config update failed: {}", e);
-        e
-    })?;
-
-    // Step 5: Verify the new token
+    // Step 4: Verify the new token
     if !token_manager
         .verify_token(&new_token, &graphql_endpoint)
         .await
@@ -54,10 +50,10 @@ pub async fn initialize_with_token_refresh(
         ));
     }
 
-    // Step 6: Start background token refresh task
+    // Step 5: Start background token refresh task
     token_manager.start_refresh_task(graphql_endpoint).await;
 
-    // Step 7: Set up environment variables
+    // Step 6: Set up environment variables
     setup_environment_variables();
 
     info!("✅ Apollo MCP Server initialization complete");

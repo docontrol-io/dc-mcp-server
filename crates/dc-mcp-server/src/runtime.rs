@@ -143,7 +143,7 @@ mod test {
 
             jail.create_file(path, config)?;
             jail.set_env(
-                "APOLLO_UPLINK_ENDPOINTS",
+                "DC_UPLINK_ENDPOINTS",
                 "http://from_env:4000/,http://from_env2:4000/",
             );
 

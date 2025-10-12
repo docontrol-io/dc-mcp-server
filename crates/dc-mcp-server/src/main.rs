@@ -3,14 +3,14 @@ use std::path::PathBuf;
 use apollo_mcp_registry::platform_api::operation_collections::collection_poller::CollectionSource;
 use apollo_mcp_registry::uplink::persisted_queries::ManifestSource;
 use apollo_mcp_registry::uplink::schema::SchemaSource;
+use clap::Parser;
+use clap::builder::Styles;
+use clap::builder::styling::{AnsiColor, Effects};
 use dc_mcp_server::custom_scalar_map::CustomScalarMap;
 use dc_mcp_server::errors::ServerError;
 use dc_mcp_server::operations::OperationSource;
 use dc_mcp_server::server::Server;
 use dc_mcp_server::startup;
-use clap::Parser;
-use clap::builder::Styles;
-use clap::builder::styling::{AnsiColor, Effects};
 use runtime::IdOrDefault;
 use tracing::{info, warn};
 
