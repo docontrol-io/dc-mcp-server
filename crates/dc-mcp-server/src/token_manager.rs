@@ -176,18 +176,21 @@ impl TokenManager {
         }
 
         // Create the header value first to ensure it's valid
-        let header_value = HeaderValue::from_str(&format!("Bearer {}", token_response.access_token))
-            .map_err(|e| {
-                McpError::new(
-                    ErrorCode::INTERNAL_ERROR,
-                    format!("Failed to create header value from token: {}", e),
-                    None,
-                )
-            })?;
+        let header_value =
+            HeaderValue::from_str(&format!("Bearer {}", token_response.access_token)).map_err(
+                |e| {
+                    McpError::new(
+                        ErrorCode::INTERNAL_ERROR,
+                        format!("Failed to create header value from token: {}", e),
+                        None,
+                    )
+                },
+            )?;
 
         // Write the token to config file if config manager is set
         if let Some(config_manager) = &self.config_manager {
-            config_manager.update_auth_token(&token_response.access_token)
+            config_manager
+                .update_auth_token(&token_response.access_token)
                 .map_err(|e| {
                     error!("Failed to write refreshed token to config file: {}", e);
                     e
