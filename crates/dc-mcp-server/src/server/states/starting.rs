@@ -139,7 +139,7 @@ impl Starting {
         let running = Running {
             schema,
             operations: Arc::new(Mutex::new(operations)),
-            headers: self.config.headers,
+            headers: self.config.shared_headers.unwrap_or_else(|| Arc::new(RwLock::new(self.config.headers))),
             endpoint: self.config.endpoint,
             execute_tool,
             introspect_tool,
@@ -355,6 +355,7 @@ mod tests {
                 mutation_mode: MutationMode::All,
                 execute_introspection: true,
                 headers: HeaderMap::new(),
+                shared_headers: None,
                 validate_introspection: true,
                 introspect_introspection: true,
                 search_introspection: true,

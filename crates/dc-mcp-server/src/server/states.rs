@@ -1,8 +1,11 @@
+use std::sync::Arc;
+
 use apollo_compiler::{Schema, validation::Valid};
 use apollo_federation::{ApiSchemaOptions, Supergraph};
 use apollo_mcp_registry::uplink::schema::{SchemaState, event::Event as SchemaEvent};
 use futures::{FutureExt as _, Stream, StreamExt as _, stream};
 use reqwest::header::HeaderMap;
+use tokio::sync::RwLock;
 use url::Url;
 
 use crate::{
@@ -34,6 +37,7 @@ struct Config {
     transport: Transport,
     endpoint: Url,
     headers: HeaderMap,
+    shared_headers: Option<Arc<RwLock<HeaderMap>>>,
     execute_introspection: bool,
     validate_introspection: bool,
     introspect_introspection: bool,
@@ -68,6 +72,7 @@ impl StateMachine {
                 transport: server.transport,
                 endpoint: server.endpoint,
                 headers: server.headers,
+                shared_headers: server.shared_headers,
                 execute_introspection: server.execute_introspection,
                 validate_introspection: server.validate_introspection,
                 introspect_introspection: server.introspect_introspection,

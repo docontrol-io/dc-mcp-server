@@ -3,10 +3,12 @@
 use crate::config_manager::ConfigManager;
 use crate::errors::McpError;
 use reqwest::Client;
+use reqwest::header::{HeaderMap, HeaderValue, AUTHORIZATION};
 use rmcp::model::ErrorCode;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
+use tokio::sync::RwLock;
 use tokio::time::sleep;
 use tracing::{debug, error, info, warn};
 
@@ -31,6 +33,7 @@ pub struct TokenManager {
     token_expires_at: Option<Instant>,
     client: Client,
     config_manager: Option<Arc<ConfigManager>>,
+    headers: Option<Arc<RwLock<HeaderMap>>>,
 }
 
 impl TokenManager {
@@ -74,12 +77,18 @@ impl TokenManager {
             token_expires_at: None,
             client,
             config_manager: None,
+            headers: None,
         })
     }
 
     /// Inject the config manager for automatic token persistence
     pub fn set_config_manager(&mut self, config_manager: Arc<ConfigManager>) {
         self.config_manager = Some(config_manager);
+    }
+
+    /// Inject the shared headers for automatic token updates
+    pub fn set_headers(&mut self, headers: Arc<RwLock<HeaderMap>>) {
+        self.headers = Some(headers);
     }
 
     /// Get a valid access token, refreshing if necessary
@@ -175,6 +184,17 @@ impl TokenManager {
             }
         }
 
+        // Update the shared headers if available
+        if let Some(headers) = &self.headers {
+            let mut headers_guard = headers.write().await;
+            if let Ok(header_value) = HeaderValue::from_str(&format!("Bearer {}", token_response.access_token)) {
+                headers_guard.insert(AUTHORIZATION, header_value);
+                info!("✅ Refreshed token updated in shared headers");
+            } else {
+                warn!("Failed to create header value from token");
+            }
+        }
+
         Ok(token_response.access_token)
     }
 
@@ -266,6 +286,7 @@ impl Clone for TokenManager {
             token_expires_at: self.token_expires_at,
             client: self.client.clone(),
             config_manager: self.config_manager.clone(),
+            headers: self.headers.clone(),
         }
     }
 }

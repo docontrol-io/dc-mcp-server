@@ -1,10 +1,12 @@
 use std::net::{IpAddr, Ipv4Addr};
+use std::sync::Arc;
 
 use apollo_mcp_registry::uplink::schema::SchemaSource;
 use bon::bon;
 use reqwest::header::{CONTENT_TYPE, HeaderMap, HeaderValue};
 use schemars::JsonSchema;
 use serde::Deserialize;
+use tokio::sync::RwLock;
 use url::Url;
 
 use crate::auth;
@@ -26,6 +28,7 @@ pub struct Server {
     operation_source: OperationSource,
     endpoint: Url,
     headers: HeaderMap,
+    shared_headers: Option<Arc<RwLock<HeaderMap>>>,
     execute_introspection: bool,
     validate_introspection: bool,
     introspect_introspection: bool,
@@ -111,6 +114,7 @@ impl Server {
         operation_source: OperationSource,
         endpoint: Url,
         headers: HeaderMap,
+        #[builder(into)] shared_headers: Option<Arc<RwLock<HeaderMap>>>,
         execute_introspection: bool,
         validate_introspection: bool,
         introspect_introspection: bool,
@@ -139,6 +143,7 @@ impl Server {
             operation_source,
             endpoint,
             headers,
+            shared_headers,
             execute_introspection,
             validate_introspection,
             introspect_introspection,
