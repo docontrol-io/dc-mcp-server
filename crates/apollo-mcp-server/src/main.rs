@@ -7,6 +7,7 @@ use apollo_mcp_server::custom_scalar_map::CustomScalarMap;
 use apollo_mcp_server::errors::ServerError;
 use apollo_mcp_server::operations::OperationSource;
 use apollo_mcp_server::server::Server;
+use apollo_mcp_server::startup;
 use clap::Parser;
 use clap::builder::Styles;
 use clap::builder::styling::{AnsiColor, Effects};
@@ -36,8 +37,12 @@ struct Args {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let config: runtime::Config = match Args::parse().config {
-        Some(config_path) => runtime::read_config(config_path)?,
+    let args = Args::parse();
+    let config_path = args.config.clone();
+    
+    // Read config for initial setup (telemetry)
+    let mut config: runtime::Config = match config_path.clone() {
+        Some(ref path) => runtime::read_config(path.clone())?,
         None => runtime::read_config_from_env().unwrap_or_default(),
     };
 
@@ -47,6 +52,34 @@ async fn main() -> anyhow::Result<()> {
         "Apollo MCP Server v{} // (c) Apollo Graph, Inc. // Licensed under MIT",
         env!("CARGO_PKG_VERSION")
     );
+
+    // Check if token refresh is enabled
+    if startup::is_token_refresh_enabled() {
+        if let (Some(refresh_token), Some(refresh_url), Some(graphql_endpoint), Some(config_file)) = (
+            startup::get_refresh_token(),
+            startup::get_refresh_url(),
+            startup::get_graphql_endpoint(),
+            config_path.as_ref(),
+        ) {
+            info!("Token refresh enabled, initializing...");
+            if let Err(e) = startup::initialize_with_token_refresh(
+                config_file.to_string_lossy().to_string(),
+                refresh_token,
+                refresh_url,
+                graphql_endpoint,
+            )
+            .await
+            {
+                warn!("Token refresh initialization failed: {}", e);
+            } else {
+                // Re-read config to get the refreshed token
+                info!("Re-reading config file to load refreshed token...");
+                config = runtime::read_config(config_file.clone())?;
+            }
+        } else {
+            warn!("Token refresh enabled but missing required environment variables");
+        }
+    }
 
     let schema_source = match config.schema {
         runtime::SchemaSource::Local { path } => SchemaSource::File { path, watch: true },

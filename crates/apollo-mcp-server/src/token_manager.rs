@@ -10,12 +10,15 @@ use tracing::{debug, error, info, warn};
 
 #[derive(Debug, Serialize)]
 struct RefreshTokenRequest {
+    #[serde(rename = "refreshToken")]
     refresh_token: String,
 }
 
 #[derive(Debug, Deserialize)]
 struct RefreshTokenResponse {
+    #[serde(rename = "accessToken")]
     access_token: String,
+    #[serde(rename = "expiresIn")]
     expires_in: Option<u64>,
 }
 
