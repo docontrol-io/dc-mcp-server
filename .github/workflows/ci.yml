@@ -12,11 +12,8 @@ on:
 
 jobs:
   test:
-    name: Test (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
+    name: Test
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -83,17 +80,8 @@ jobs:
         run: cargo doc --no-deps --workspace
 
   build:
-    name: Build (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            artifact_name: apollo-mcp-server-linux-x86_64
-            binary_path: target/release/apollo-mcp-server
-          - os: macos-latest
-            artifact_name: apollo-mcp-server-macos-aarch64
-            binary_path: target/release/apollo-mcp-server
+    name: Build
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -124,5 +112,5 @@ jobs:
       - name: Upload binary artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact_name }}
-          path: ${{ matrix.binary_path }}
+          name: apollo-mcp-server-linux-x86_64
+          path: target/release/apollo-mcp-server
