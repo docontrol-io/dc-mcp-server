@@ -66,7 +66,8 @@ impl GraphOSConfig {
     /// Extract the apollo graph reference from the config, env, or use hardcoded default
     #[allow(clippy::result_large_err)]
     pub fn graph_ref(&self) -> Result<String, ServerError> {
-        Ok(self.apollo_graph_ref
+        Ok(self
+            .apollo_graph_ref
             .clone()
             .unwrap_or_else(|| DEFAULT_GRAPH_REF.to_string()))
     }
