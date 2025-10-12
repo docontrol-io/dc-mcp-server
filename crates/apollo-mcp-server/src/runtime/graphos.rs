@@ -15,6 +15,7 @@ use serde::Serialize;
 
 const APOLLO_GRAPH_REF_ENV: &str = "APOLLO_GRAPH_REF";
 const APOLLO_KEY_ENV: &str = "APOLLO_KEY";
+const DEFAULT_GRAPH_REF: &str = "docontrol-api@current";
 
 fn apollo_uplink_endpoints_deserializer<'de, D>(deserializer: D) -> Result<Vec<Url>, D::Error>
 where
@@ -62,12 +63,12 @@ pub struct GraphOSConfig {
 }
 
 impl GraphOSConfig {
-    /// Extract the apollo graph reference from the config or from the current env
+    /// Extract the apollo graph reference from the config, env, or use hardcoded default
     #[allow(clippy::result_large_err)]
     pub fn graph_ref(&self) -> Result<String, ServerError> {
-        self.apollo_graph_ref
+        Ok(self.apollo_graph_ref
             .clone()
-            .ok_or_else(|| ServerError::EnvironmentVariable(APOLLO_GRAPH_REF_ENV.to_string()))
+            .unwrap_or_else(|| DEFAULT_GRAPH_REF.to_string()))
     }
 
     /// Extract the apollo key from the config or from the current env
