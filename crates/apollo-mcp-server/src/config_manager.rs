@@ -45,7 +45,10 @@ impl ConfigManager {
             .map(|line| {
                 if line.contains("Authorization: Bearer") {
                     // Preserve leading whitespace (indentation)
-                    let indent = line.chars().take_while(|c| c.is_whitespace()).collect::<String>();
+                    let indent = line
+                        .chars()
+                        .take_while(|c| c.is_whitespace())
+                        .collect::<String>();
                     format!("{}Authorization: Bearer {}", indent, new_token)
                 } else {
                     line.to_string()

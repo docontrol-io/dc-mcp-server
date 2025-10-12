@@ -39,7 +39,7 @@ struct Args {
 async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
     let config_path = args.config.clone();
-    
+
     // Read config for initial setup (telemetry)
     let mut config: runtime::Config = match config_path.clone() {
         Some(ref path) => runtime::read_config(path.clone())?,
