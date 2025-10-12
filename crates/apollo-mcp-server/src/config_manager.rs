@@ -112,7 +112,6 @@ impl ConfigManager {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -124,7 +123,7 @@ mod tests {
     fn test_config_file_operations() {
         let temp_dir = TempDir::new().unwrap();
         let config_path = temp_dir.path().join("test_config.yaml");
-        
+
         // Create initial config
         let initial_config = r#"
 endpoint: "https://api.example.com/graphql"
@@ -157,7 +156,7 @@ headers:
     fn test_config_backup_creation() {
         let temp_dir = TempDir::new().unwrap();
         let config_path = temp_dir.path().join("test_config.yaml");
-        
+
         let initial_config = r#"
 endpoint: "https://api.example.com/graphql"
 headers:
@@ -166,7 +165,7 @@ headers:
         fs::write(&config_path, initial_config).unwrap();
 
         let config_manager = ConfigManager::new(config_path.to_string_lossy().to_string());
-        
+
         // Count files before update
         let files_before: Vec<_> = fs::read_dir(temp_dir.path()).unwrap().collect();
         let count_before = files_before.len();
@@ -182,12 +181,10 @@ headers:
         assert_eq!(count_after, count_before + 1);
 
         // Verify backup file exists
-        let backup_exists = fs::read_dir(temp_dir.path())
-            .unwrap()
-            .any(|entry| {
-                let entry = entry.unwrap();
-                entry.path().to_string_lossy().contains(".backup.")
-            });
+        let backup_exists = fs::read_dir(temp_dir.path()).unwrap().any(|entry| {
+            let entry = entry.unwrap();
+            entry.path().to_string_lossy().contains(".backup.")
+        });
         assert!(backup_exists, "Backup file should exist");
     }
 
@@ -196,7 +193,7 @@ headers:
     fn test_config_verification() {
         let temp_dir = TempDir::new().unwrap();
         let config_path = temp_dir.path().join("test_config.yaml");
-        
+
         let config_manager = ConfigManager::new(config_path.to_string_lossy().to_string());
 
         // Test with non-existent file
