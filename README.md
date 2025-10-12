@@ -1,4 +1,4 @@
-# Apollo MCP Server for DoControl
+# DoControl MCP Server
 
 This is a thin wrapper around [Apollo MCP Server](https://github.com/apollographql/apollo-mcp-server) configured specifically for DoControl's authentication flow.
 
@@ -14,7 +14,7 @@ This wrapper handles DoControl's OAuth token refresh flow automatically:
 
 ### How It Works
 
-1. **Token Refresh**: Uses `APOLLO_REFRESH_TOKEN` to obtain fresh access tokens from `APOLLO_REFRESH_URL`
+1. **Token Refresh**: Uses `DC_REFRESH_TOKEN` to obtain fresh access tokens from `DC_REFRESH_URL`
 2. **Auto-Refresh**: Tokens are automatically refreshed before expiration (5 minutes before)
 3. **Config Update**: Fresh tokens are written back to the config file's auth section
 4. **Background Task**: A background task continuously monitors and refreshes tokens
@@ -26,15 +26,16 @@ The server requires these environment variables:
 
 ```bash
 # DoControl Token Refresh
-APOLLO_REFRESH_TOKEN="your-refresh-token-from-docontrol"
-APOLLO_REFRESH_URL="https://auth.prod.docontrol.io/refresh"
-APOLLO_GRAPHQL_ENDPOINT="https://apollo-gateway-v4-api.prod.docontrol.io/graphql"
+DC_TOKEN_REFRESH_ENABLED="true"
+DC_REFRESH_TOKEN="your-refresh-token-from-docontrol"
+DC_REFRESH_URL="https://auth.prod.docontrol.io/refresh"
+DC_GRAPHQL_ENDPOINT="https://apollo-gateway-v4-api.prod.docontrol.io/graphql"
 
 # Apollo GraphOS API Key
-APOLLO_KEY="service:docontrol-api:your-apollo-key"
+DC_API_KEY="service:docontrol-api:your-apollo-key"
 
 # Optional: Override the hardcoded graph ref (defaults to "docontrol-api@current")
-# APOLLO_GRAPH_REF="docontrol-api@current"
+# DC_GRAPH_REF="docontrol-api@current"
 ```
 
 ### Configuration File
@@ -47,7 +48,7 @@ endpoint: "https://apollo-gateway-v4-api.prod.docontrol.io/graphql"
 
 # Apollo GraphOS configuration
 graphos:
-  apollo_key: "${APOLLO_KEY}"  # From environment variable
+  apollo_key: "${DC_API_KEY}"  # From environment variable
 
 # Use introspection to discover operations
 operations: introspect
@@ -58,7 +59,7 @@ introspection:
   mutation: true
 ```
 
-**Note**: The `apollo_graph_ref` is hardcoded in the source code as `docontrol-api@current`. You can override it by setting the `APOLLO_GRAPH_REF` environment variable if needed.
+**Note**: The `apollo_graph_ref` is hardcoded in the source code as `docontrol-api@current`. You can override it by setting the `DC_GRAPH_REF` environment variable if needed.
 
 **Note**: The `auth` section in the config file is automatically managed by the token refresh system. You don't need to manually specify it.
 
@@ -76,14 +77,16 @@ Add this to your MCP configuration file:
 {
   "mcpServers": {
     "docontrol": {
-      "command": "/path/to/apollo-mcp-server",
+      "command": "/path/to/dc-mcp-server",
       "args": ["/path/to/config.yaml"],
       "env": {
-        "APOLLO_REFRESH_TOKEN": "your-refresh-token",
-        "APOLLO_REFRESH_URL": "https://auth.prod.docontrol.io/refresh",
-        "APOLLO_GRAPHQL_ENDPOINT": "https://apollo-gateway-v4-api.prod.docontrol.io/graphql",
-        "APOLLO_GRAPH_REF": "docontrol-api@current",
-        "APOLLO_KEY": "service:docontrol-api:your-key"
+        "DC_TOKEN_REFRESH_ENABLED": "true",
+        "DC_REFRESH_TOKEN": "your-refresh-token",
+        "DC_REFRESH_URL": "https://auth.prod.docontrol.io/refresh",
+        "DC_GRAPHQL_ENDPOINT": "https://apollo-gateway-v4-api.prod.docontrol.io/graphql",
+        "DC_GRAPH_REF": "docontrol-api@current",
+        "DC_API_KEY": "service:docontrol-api:your-key",
+        "RUST_LOG": "info"
       }
     }
   }
@@ -95,13 +98,14 @@ Add this to your MCP configuration file:
 For testing and debugging:
 
 ```bash
-export APOLLO_REFRESH_TOKEN="your-refresh-token"
-export APOLLO_REFRESH_URL="https://auth.prod.docontrol.io/refresh"
-export APOLLO_GRAPHQL_ENDPOINT="https://apollo-gateway-v4-api.prod.docontrol.io/graphql"
-export APOLLO_GRAPH_REF="docontrol-api@current"
-export APOLLO_KEY="service:docontrol-api:your-key"
+export DC_TOKEN_REFRESH_ENABLED="true"
+export DC_REFRESH_TOKEN="your-refresh-token"
+export DC_REFRESH_URL="https://auth.prod.docontrol.io/refresh"
+export DC_GRAPHQL_ENDPOINT="https://apollo-gateway-v4-api.prod.docontrol.io/graphql"
+export DC_GRAPH_REF="docontrol-api@current"
+export DC_API_KEY="service:docontrol-api:your-key"
 
-npx @modelcontextprotocol/inspector apollo-mcp-server config.yaml
+npx @modelcontextprotocol/inspector dc-mcp-server config.yaml
 ```
 
 ## How Introspection Works
@@ -119,15 +123,16 @@ All queries and mutations from the DoControl GraphQL API are automatically avail
 
 ### From Release
 
-Download the latest release for your platform from the [releases page](https://github.com/yourusername/dc-mcp-server/releases):
-- **Linux**: `apollo-mcp-server-linux-x86_64.tar.gz`
-- **macOS**: `apollo-mcp-server-macos-aarch64.tar.gz`
+Download the latest release for your platform from the [releases page](https://github.com/docontrol-io/dc-mcp-server/releases):
+- **Linux**: `dc-mcp-server-linux-x86_64.tar.gz`
+- **macOS**: `dc-mcp-server-macos-aarch64.tar.gz`
+- **Windows**: `dc-mcp-server-windows-x86_64.tar.gz`
 
 ### From Source
 
 ```bash
-cargo build --release
-cp target/release/apollo-mcp-server /usr/local/bin/
+cargo build --release --package dc-mcp-server
+cp target/release/dc-mcp-server /usr/local/bin/
 ```
 
 ## Example Setup
@@ -163,13 +168,13 @@ The AI assistant will have access to all GraphQL queries and mutations from the 
 - ✅ **Limit permissions** - use read-only tokens when possible
 
 **Secrets to protect:**
-- `APOLLO_REFRESH_TOKEN` - DoControl OAuth refresh token
-- `APOLLO_KEY` - Apollo Studio API key
+- `DC_REFRESH_TOKEN` - DoControl OAuth refresh token
+- `DC_API_KEY` - Apollo Studio API key
 - Config files containing tokens
 
 ## How Token Refresh Works
 
-1. **Server Startup**: Reads `APOLLO_REFRESH_TOKEN` from environment
+1. **Server Startup**: Reads `DC_REFRESH_TOKEN` from environment
 2. **Initial Refresh**: Immediately refreshes to get a valid access token
 3. **Config Update**: Writes access token to config file's `auth` section
 4. **Token Verification**: Verifies token works with a test GraphQL request
@@ -194,7 +199,7 @@ cargo build --release
 
 Enable debug logging:
 ```bash
-RUST_LOG=debug apollo-mcp-server config.yaml
+RUST_LOG=debug dc-mcp-server config.yaml
 ```
 
 ## Upstream

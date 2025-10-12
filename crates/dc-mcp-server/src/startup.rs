@@ -55,7 +55,9 @@ pub async fn initialize_with_token_refresh(
     }
 
     // Step 6: Start background token refresh task
-    token_manager.start_refresh_task(graphql_endpoint).await;
+    token_manager
+        .start_refresh_task(graphql_endpoint, config_path)
+        .await;
 
     // Step 7: Set up environment variables
     setup_environment_variables();

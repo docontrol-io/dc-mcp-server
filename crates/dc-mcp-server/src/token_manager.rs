@@ -213,7 +213,7 @@ impl TokenManager {
     }
 
     /// Start background token refresh task
-    pub async fn start_refresh_task(&mut self, graphql_endpoint: String) {
+    pub async fn start_refresh_task(&mut self, graphql_endpoint: String, config_path: String) {
         let mut token_manager = self.clone();
 
         tokio::spawn(async move {
@@ -226,6 +226,15 @@ impl TokenManager {
                         if let Err(e) = token_manager.verify_token(&token, &graphql_endpoint).await
                         {
                             error!("Token verification failed in background task: {}", e);
+                        } else {
+                            // Write the refreshed token back to the config file
+                            use crate::config_manager::ConfigManager;
+                            let config_manager = ConfigManager::new(config_path.clone());
+                            if let Err(e) = config_manager.update_auth_token(&token) {
+                                error!("Failed to write refreshed token to config file: {}", e);
+                            } else {
+                                info!("✅ Background task: refreshed token written to config file");
+                            }
                         }
                     }
                     Err(e) => {
