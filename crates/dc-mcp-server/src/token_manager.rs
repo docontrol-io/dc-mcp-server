@@ -2,6 +2,7 @@
 
 use crate::config_manager::ConfigManager;
 use crate::errors::McpError;
+use once_cell::sync::OnceCell;
 use reqwest::Client;
 use reqwest::header::{AUTHORIZATION, HeaderMap, HeaderValue};
 use rmcp::model::ErrorCode;
@@ -11,7 +12,6 @@ use std::time::{Duration, Instant};
 use tokio::sync::{Mutex, RwLock};
 use tokio::time::sleep;
 use tracing::{debug, error, info, warn};
-use once_cell::sync::OnceCell;
 
 // Global token manager for on-demand refresh
 static GLOBAL_TOKEN_MANAGER: OnceCell<Arc<Mutex<TokenManager>>> = OnceCell::new();
@@ -22,7 +22,9 @@ pub fn get_global_token_manager() -> Option<Arc<Mutex<TokenManager>>> {
 }
 
 /// Set the global token manager (can only be called once)
-pub fn set_global_token_manager(tm: Arc<Mutex<TokenManager>>) -> Result<(), Arc<Mutex<TokenManager>>> {
+pub fn set_global_token_manager(
+    tm: Arc<Mutex<TokenManager>>,
+) -> Result<(), Arc<Mutex<TokenManager>>> {
     GLOBAL_TOKEN_MANAGER.set(tm)
 }
 
@@ -113,14 +115,20 @@ impl TokenManager {
         {
             // Check how much time remains until expiry
             let remaining = expires_at.saturating_duration_since(Instant::now());
-            
+
             // Refresh token if less than 2 minutes remaining (token lifetime is 5 minutes)
             if remaining > Duration::from_secs(120) {
-                debug!("Using existing valid token (expires in {}s)", remaining.as_secs());
+                debug!(
+                    "Using existing valid token (expires in {}s)",
+                    remaining.as_secs()
+                );
                 return Ok(token.clone());
             }
-            
-            info!("⏰ Token approaching expiry ({}s remaining), refreshing proactively", remaining.as_secs());
+
+            info!(
+                "⏰ Token approaching expiry ({}s remaining), refreshing proactively",
+                remaining.as_secs()
+            );
         }
 
         // Need to refresh token

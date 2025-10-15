@@ -9,10 +9,9 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{info, warn};
 
-/// Initialize the Apollo MCP Server with token refresh and environment setup
-/// Returns the TokenManager for on-demand token refresh before requests
-/// This is now synchronous to avoid blocking server startup
-pub fn initialize_with_token_refresh(
+/// Create and configure a TokenManager for on-demand token refresh
+/// Returns the TokenManager which will refresh tokens when needed before requests
+pub fn create_token_manager(
     config_path: String,
     refresh_token: String,
     refresh_url: String,
@@ -26,7 +25,7 @@ pub fn initialize_with_token_refresh(
     // Step 1: Create shared config manager
     info!("Step 1: Creating config manager...");
     let config_manager = Arc::new(ConfigManager::new(config_path.clone()));
-    
+
     info!("Step 1a: Verifying config...");
     config_manager.verify_config().map_err(|e| {
         warn!("Config verification failed: {}", e);
@@ -38,17 +37,16 @@ pub fn initialize_with_token_refresh(
     info!("Step 2: Creating token manager...");
     let mut token_manager = TokenManager::new(refresh_token, refresh_url)?;
     info!("✅ Token manager created");
-    
+
     info!("Step 2a: Setting config manager...");
     token_manager.set_config_manager(Arc::clone(&config_manager));
     info!("✅ Config manager set");
-    
+
     info!("Step 2b: Setting headers...");
     token_manager.set_headers(Arc::clone(&shared_headers));
     info!("✅ Headers set");
 
-    // Token will be refreshed on-demand before first request
-    info!("✅ Apollo MCP Server initialization complete - token manager ready");
+    info!("✅ Apollo MCP Server token manager ready for on-demand refresh");
     Ok(token_manager)
 }
 

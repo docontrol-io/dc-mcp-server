@@ -68,7 +68,7 @@ async fn main() -> anyhow::Result<()> {
             config_path.as_ref(),
         ) {
             info!("Token refresh enabled, initializing...");
-            match startup::initialize_with_token_refresh(
+            match startup::create_token_manager(
                 config_file.to_string_lossy().to_string(),
                 refresh_token,
                 refresh_url,
