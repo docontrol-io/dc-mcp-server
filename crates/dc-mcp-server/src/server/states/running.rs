@@ -37,6 +37,7 @@ use crate::{
         validate::{VALIDATE_TOOL_NAME, Validate},
     },
     operations::{MutationMode, Operation, RawOperation},
+    token_manager::TokenManager,
 };
 
 #[derive(Clone)]
@@ -58,6 +59,7 @@ pub(super) struct Running {
     pub(super) disable_schema_description: bool,
     pub(super) disable_auth_token_passthrough: bool,
     pub(super) health_check: Option<HealthCheck>,
+    pub(super) token_manager: Option<Arc<Mutex<TokenManager>>>,
 }
 
 impl Running {
@@ -210,7 +212,7 @@ impl ServerHandler for Running {
         context: RequestContext<RoleServer>,
     ) -> Result<CallToolResult, McpError> {
         // Proactively refresh token if needed before executing any tool
-        if let Some(token_manager) = crate::token_manager::get_global_token_manager() {
+        if let Some(token_manager) = &self.token_manager {
             let mut tm = token_manager.lock().await;
             if let Err(e) = tm.get_valid_token().await {
                 error!("Failed to refresh token before request: {}", e);
@@ -431,6 +433,7 @@ mod tests {
             disable_schema_description: false,
             disable_auth_token_passthrough: false,
             health_check: None,
+            token_manager: None,
         };
 
         let operations = vec![

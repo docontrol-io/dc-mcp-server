@@ -881,7 +881,6 @@ dependencies = [
  "jwks",
  "lz-str",
  "mockito",
- "once_cell",
  "opentelemetry",
  "opentelemetry-appender-log",
  "opentelemetry-otlp",
