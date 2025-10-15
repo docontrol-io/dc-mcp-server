@@ -2,8 +2,8 @@
 
 use crate::config_manager::ConfigManager;
 use crate::errors::McpError;
-use reqwest::header::{AUTHORIZATION, HeaderMap, HeaderValue};
 use reqwest::Client;
+use reqwest::header::{AUTHORIZATION, HeaderMap, HeaderValue};
 use rmcp::model::ErrorCode;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
