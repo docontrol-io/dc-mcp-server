@@ -33,18 +33,55 @@ This approach ensures:
 
 The server requires these environment variables:
 
+**Required for Token Refresh:**
 ```bash
-# DoControl Token Refresh
+# Enable token refresh functionality
 DC_TOKEN_REFRESH_ENABLED="true"
+
+# DoControl refresh token (OAuth refresh token from DoControl)
 DC_REFRESH_TOKEN="your-refresh-token-from-docontrol"
+
+# DoControl token refresh endpoint
 DC_REFRESH_URL="https://auth.prod.docontrol.io/refresh"
+
+# DoControl GraphQL API endpoint
 DC_GRAPHQL_ENDPOINT="https://apollo-gateway-v4-api.prod.docontrol.io/graphql"
+```
 
-# Apollo GraphOS API Key
+**Required for Apollo GraphOS (Schema Registry):**
+```bash
+# Apollo Studio API key (used for schema registry access)
 DC_API_KEY="service:docontrol-api:your-apollo-key"
+```
 
-# Optional: Override the hardcoded graph ref (defaults to "docontrol-api@current")
-# DC_GRAPH_REF="docontrol-api@current"
+**Optional - HTTP Client Configuration:**
+```bash
+# Request timeout in seconds (default: 30)
+REQWEST_TIMEOUT="30"
+
+# Connection timeout in seconds (default: 10)
+REQWEST_CONNECT_TIMEOUT="10"
+
+# User agent string (default: "curl/8.4.0")
+REQWEST_USER_AGENT="curl/8.4.0"
+
+# Disable SSL certificate verification (default: false - verification enabled)
+REQWEST_SSL_VERIFY="true"
+
+# Disable SSL hostname verification (default: false - verification enabled)
+REQWEST_SSL_VERIFY_HOSTNAME="true"
+```
+
+**Optional - Other:**
+```bash
+# Deployment environment for telemetry (default: "development")
+ENVIRONMENT="production"
+
+# Rust logging level (default: varies by component)
+RUST_LOG="info"
+
+# Use system certificate store (recommended for macOS/Linux)
+RUSTLS_SYSTEM_CERT_ROOT="1"
 ```
 
 ### Configuration File
@@ -381,18 +418,38 @@ The server uses an intelligent on-demand token refresh strategy:
 4. **Fast Startup**: No blocking network calls during initialization
 
 ### During Operation
-1. **Before Each Request**: Token manager checks if current token is valid
-2. **Token Expiry Check**: Refreshes if less than 2 minutes remaining (out of 5-minute lifetime)
-3. **Synchronous Refresh**: If needed, refreshes token before executing the request
-4. **Atomic Updates**: Updates both config file and in-memory headers together
-5. **Error Handling**: If refresh fails, request proceeds with current token
 
-### Token Lifetime
-- **DoControl tokens expire after 5 minutes**
-- **Refresh threshold: 2 minutes remaining** - ensures token won't expire during request
-- First request after startup will always refresh (no initial token)
-- Token is reused across multiple requests within the 3-minute window (5min - 2min threshold)
-- Proactive refresh prevents mid-request token expiry
+**Before Each Request** (called from `running.rs` via global token manager):
+
+1. **Check Existing Token**: If we have a token and expiry time:
+   - Calculate time remaining: `expires_at - now`
+   - **If > 120 seconds (2 minutes) remaining**: Return existing token ✅
+   - **If ≤ 120 seconds remaining**: Continue to refresh
+
+2. **Refresh Token**: Make POST request to `DC_REFRESH_URL` with refresh token
+   - Receive new access token with `expires_in` (typically 300 seconds = 5 minutes)
+   - Store new token and calculate expiry: `now + expires_in`
+   - Update config file: Write new token to YAML config
+   - Update shared headers: Insert `Authorization: Bearer <token>` header atomically
+   - Return new token
+
+3. **First Request Behavior**: 
+   - No existing token → Immediately refresh
+   - Gets fresh token valid for 5 minutes
+
+### Token Reuse Window
+
+With **5-minute token lifetime** and **2-minute refresh threshold**:
+
+```
+Request 1 (t=0:00): No token → REFRESH → Token expires at 5:00
+Request 2 (t=0:30): 4:30 remaining → REUSE existing token
+Request 3 (t=2:00): 3:00 remaining → REUSE existing token  
+Request 4 (t=3:05): 1:55 remaining → REFRESH → Token expires at 8:05
+Request 5 (t=3:30): 4:35 remaining → REUSE existing token
+```
+
+**Result**: Tokens are reused for ~3 minutes (5min - 2min = 3min effective window), minimizing refresh calls while ensuring tokens never expire mid-request.
 
 ### Benefits
 - **Efficient**: Tokens are reused across multiple requests
