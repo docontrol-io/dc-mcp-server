@@ -12,6 +12,7 @@ use dc_mcp_server::errors::ServerError;
 use dc_mcp_server::operations::OperationSource;
 use dc_mcp_server::server::Server;
 use dc_mcp_server::startup;
+use dc_mcp_server::token_manager;
 use runtime::IdOrDefault;
 use tokio::sync::RwLock;
 use tracing::{info, warn};
@@ -58,8 +59,8 @@ async fn main() -> anyhow::Result<()> {
     // Create shared headers that can be updated by token refresh
     let shared_headers = Arc::new(RwLock::new(config.headers.clone()));
 
-    // Check if token refresh is enabled
-    if startup::is_token_refresh_enabled() {
+    // Initialize token manager if token refresh is enabled
+    let _token_manager = if startup::is_token_refresh_enabled() {
         if let (Some(refresh_token), Some(refresh_url), Some(graphql_endpoint), Some(config_file)) = (
             startup::get_refresh_token(),
             startup::get_refresh_url(),
@@ -67,24 +68,32 @@ async fn main() -> anyhow::Result<()> {
             config_path.as_ref(),
         ) {
             info!("Token refresh enabled, initializing...");
-            if let Err(e) = startup::initialize_with_token_refresh(
+            match startup::initialize_with_token_refresh(
                 config_file.to_string_lossy().to_string(),
                 refresh_token,
                 refresh_url,
                 graphql_endpoint,
                 Arc::clone(&shared_headers),
-            )
-            .await
-            {
-                warn!("Token refresh initialization failed: {}", e);
-            } else {
-                // Token has been refreshed and shared_headers updated by initialize_with_token_refresh
-                info!("✅ Token refresh initialization complete");
+            ) {
+                Ok(tm) => {
+                    info!("✅ Token manager ready - will refresh tokens on-demand before requests");
+                    let token_mgr = Arc::new(tokio::sync::Mutex::new(tm));
+                    // Store in global static for access from anywhere
+                    let _ = token_manager::set_global_token_manager(token_mgr.clone());
+                    Some(token_mgr)
+                }
+                Err(e) => {
+                    warn!("Token manager initialization failed: {}", e);
+                    None
+                }
             }
         } else {
             warn!("Token refresh enabled but missing required environment variables");
+            None
         }
-    }
+    } else {
+        None
+    };
 
     let schema_source = match config.schema {
         runtime::SchemaSource::Local { path } => SchemaSource::File { path, watch: true },

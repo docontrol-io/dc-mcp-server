@@ -209,6 +209,15 @@ impl ServerHandler for Running {
         request: CallToolRequestParam,
         context: RequestContext<RoleServer>,
     ) -> Result<CallToolResult, McpError> {
+        // Proactively refresh token if needed before executing any tool
+        if let Some(token_manager) = crate::token_manager::get_global_token_manager() {
+            let mut tm = token_manager.lock().await;
+            if let Err(e) = tm.get_valid_token().await {
+                error!("Failed to refresh token before request: {}", e);
+                // Don't fail the request, let it try with the current token
+            }
+        }
+
         let meter = &meter::METER;
         let start = std::time::Instant::now();
         let tool_name = request.name.clone();

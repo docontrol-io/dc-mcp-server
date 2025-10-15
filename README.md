@@ -14,11 +14,20 @@ This wrapper handles DoControl's OAuth token refresh flow automatically:
 
 ### How It Works
 
-1. **Token Refresh**: Uses `DC_REFRESH_TOKEN` to obtain fresh access tokens from `DC_REFRESH_URL`
-2. **Auto-Refresh**: Tokens are automatically refreshed before expiration (5 minutes before)
+1. **On-Demand Refresh**: Tokens are refreshed automatically before each request when needed
+2. **Smart Detection**: Refreshes if token has less than 2 minutes remaining (out of 5-minute lifetime)
 3. **Config Update**: Fresh tokens are written back to the config file's auth section
-4. **Background Task**: A background task continuously monitors and refreshes tokens
-5. **GraphQL Requests**: All operations use the current valid access token
+4. **Shared Headers**: Tokens are updated in both config file and in-memory headers atomically
+5. **No Background Tasks**: Refresh happens synchronously when needed, not in background
+6. **GraphQL Requests**: All operations use the current valid access token
+
+This approach ensures:
+- ✅ **No wasted refreshes** - Only refresh when token is actually needed
+- ✅ **No startup delay** - Server starts instantly without initial token verification
+- ✅ **Thread-safe** - Global token manager accessible from all request handlers
+- ✅ **Reliable** - Synchronous refresh ensures token is valid before each request
+
+**Note**: DoControl tokens have a 5-minute lifetime. The server refreshes tokens on-demand before executing requests to ensure they're always valid.
 
 ### Environment Variables
 
@@ -363,12 +372,34 @@ The AI assistant will have access to all GraphQL queries and mutations from the 
 
 ## How Token Refresh Works
 
+The server uses an intelligent on-demand token refresh strategy:
+
+### Startup
 1. **Server Startup**: Reads `DC_REFRESH_TOKEN` from environment
-2. **Initial Refresh**: Immediately refreshes to get a valid access token
-3. **Config Update**: Writes access token to config file's `auth` section
-4. **Token Verification**: Verifies token works with a test GraphQL request
-5. **Background Task**: Monitors token expiration and refreshes 5 minutes before expiry
-6. **Automatic Updates**: Config file is automatically updated with new tokens
+2. **No Initial Refresh**: Server starts immediately without fetching tokens
+3. **Global Token Manager**: TokenManager is initialized and stored globally
+4. **Fast Startup**: No blocking network calls during initialization
+
+### During Operation
+1. **Before Each Request**: Token manager checks if current token is valid
+2. **Token Expiry Check**: Refreshes if less than 2 minutes remaining (out of 5-minute lifetime)
+3. **Synchronous Refresh**: If needed, refreshes token before executing the request
+4. **Atomic Updates**: Updates both config file and in-memory headers together
+5. **Error Handling**: If refresh fails, request proceeds with current token
+
+### Token Lifetime
+- **DoControl tokens expire after 5 minutes**
+- **Refresh threshold: 2 minutes remaining** - ensures token won't expire during request
+- First request after startup will always refresh (no initial token)
+- Token is reused across multiple requests within the 3-minute window (5min - 2min threshold)
+- Proactive refresh prevents mid-request token expiry
+
+### Benefits
+- **Efficient**: Tokens are reused across multiple requests
+- **Reliable**: Token is always validated before use
+- **Fast Startup**: Server is ready instantly
+- **Thread-Safe**: Global static ensures safe concurrent access
+- **No Background Tasks**: Simpler architecture, easier to debug
 
 ## Development
 
