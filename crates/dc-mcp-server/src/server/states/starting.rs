@@ -157,6 +157,7 @@ impl Starting {
             disable_schema_description: self.config.disable_schema_description,
             disable_auth_token_passthrough: self.config.disable_auth_token_passthrough,
             health_check: health_check.clone(),
+            token_manager: self.config.token_manager.clone(),
         };
 
         // Helper to enable auth
@@ -376,6 +377,7 @@ mod tests {
                     ..Default::default()
                 },
                 cors: Default::default(),
+                token_manager: None,
             },
             schema: Schema::parse_and_validate("type Query { hello: String }", "test.graphql")
                 .expect("Valid schema"),

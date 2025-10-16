@@ -12,9 +12,8 @@ use dc_mcp_server::errors::ServerError;
 use dc_mcp_server::operations::OperationSource;
 use dc_mcp_server::server::Server;
 use dc_mcp_server::startup;
-use dc_mcp_server::token_manager;
 use runtime::IdOrDefault;
-use tokio::sync::RwLock;
+use tokio::sync::{Mutex, RwLock};
 use tracing::{info, warn};
 
 mod runtime;
@@ -60,7 +59,7 @@ async fn main() -> anyhow::Result<()> {
     let shared_headers = Arc::new(RwLock::new(config.headers.clone()));
 
     // Initialize token manager if token refresh is enabled
-    let _token_manager = if startup::is_token_refresh_enabled() {
+    let token_manager = if startup::is_token_refresh_enabled() {
         if let (Some(refresh_token), Some(refresh_url), Some(graphql_endpoint), Some(config_file)) = (
             startup::get_refresh_token(),
             startup::get_refresh_url(),
@@ -77,10 +76,7 @@ async fn main() -> anyhow::Result<()> {
             ) {
                 Ok(tm) => {
                     info!("✅ Token manager ready - will refresh tokens on-demand before requests");
-                    let token_mgr = Arc::new(tokio::sync::Mutex::new(tm));
-                    // Store in global static for access from anywhere
-                    let _ = token_manager::set_global_token_manager(token_mgr.clone());
-                    Some(token_mgr)
+                    Some(Arc::new(Mutex::new(tm)))
                 }
                 Err(e) => {
                     warn!("Token manager initialization failed: {}", e);
@@ -194,6 +190,7 @@ async fn main() -> anyhow::Result<()> {
         .index_memory_bytes(config.introspection.search.index_memory_bytes)
         .health_check(config.health_check)
         .cors(config.cors)
+        .maybe_token_manager(token_manager)
         .build()
         .start()
         .await?)

@@ -2,31 +2,15 @@
 
 use crate::config_manager::ConfigManager;
 use crate::errors::McpError;
-use once_cell::sync::OnceCell;
 use reqwest::Client;
 use reqwest::header::{AUTHORIZATION, HeaderMap, HeaderValue};
 use rmcp::model::ErrorCode;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
-use tokio::sync::{Mutex, RwLock};
+use tokio::sync::RwLock;
 use tokio::time::sleep;
 use tracing::{debug, error, info, warn};
-
-// Global token manager for on-demand refresh
-static GLOBAL_TOKEN_MANAGER: OnceCell<Arc<Mutex<TokenManager>>> = OnceCell::new();
-
-/// Get the global token manager if it exists
-pub fn get_global_token_manager() -> Option<Arc<Mutex<TokenManager>>> {
-    GLOBAL_TOKEN_MANAGER.get().cloned()
-}
-
-/// Set the global token manager (can only be called once)
-pub fn set_global_token_manager(
-    tm: Arc<Mutex<TokenManager>>,
-) -> Result<(), Arc<Mutex<TokenManager>>> {
-    GLOBAL_TOKEN_MANAGER.set(tm)
-}
 
 #[derive(Debug, Serialize)]
 struct RefreshTokenRequest {
