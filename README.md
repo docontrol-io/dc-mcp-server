@@ -16,7 +16,7 @@ This wrapper handles DoControl's OAuth token refresh flow automatically:
 
 1. **Token Refresh**: Uses `DC_REFRESH_TOKEN` to obtain fresh access tokens from `DC_REFRESH_URL`
 2. **Auto-Refresh**: Tokens are automatically refreshed before expiration (5 minutes before)
-3. **Config Update**: Fresh tokens are written back to the config file's auth section
+3. **Config Update**: Fresh access tokens are written back to the config file's `headers.Authorization` field
 4. **Background Task**: A background task continuously monitors and refreshes tokens
 5. **GraphQL Requests**: All operations use the current valid access token
 
@@ -27,7 +27,7 @@ The server requires these environment variables:
 ```bash
 # DoControl Token Refresh
 DC_TOKEN_REFRESH_ENABLED="true"
-DC_REFRESH_TOKEN="your-refresh-token-from-docontrol"
+DC_REFRESH_TOKEN="eyJjdHkiOiJKV1QiLCJlbmMiOiJBMjU2R0NNIiwiYWxnIjoiUlNBLU9BRVAifQ..."  # Encrypted refresh token (see Token Format below)
 DC_REFRESH_URL="https://auth.prod.docontrol.io/refresh"
 DC_GRAPHQL_ENDPOINT="https://apollo-gateway-v4-api.prod.docontrol.io/graphql"
 
@@ -37,6 +37,44 @@ DC_API_KEY="service:docontrol-api:your-apollo-key"
 # Optional: Override the hardcoded graph ref (defaults to "docontrol-api@current")
 # DC_GRAPH_REF="docontrol-api@current"
 ```
+
+### Token Format
+
+**IMPORTANT**: `DC_REFRESH_TOKEN` must be the encrypted refresh token string only, NOT the entire JSON response.
+
+✅ **Correct format** (encrypted JWT string):
+```
+eyJjdHkiOiJKV1QiLCJlbmMiOiJBMjU2R0NNIiwiYWxnIjoiUlNBLU9BRVAifQ.X3QJN9C5sg2b1W_fJJ8X...
+```
+
+❌ **Wrong format** (full JSON response):
+```json
+{
+  "token": "eyJraWQiOiI...",
+  "expiresIn": 300,
+  "refreshToken": "eyJjdHkiOiJKV1QiLCJlbmMi..."
+}
+```
+
+**How to get the correct refresh token:**
+
+1. Call the refresh endpoint to get a new token:
+   ```bash
+   curl -X POST https://auth.prod.docontrol.io/refresh \
+     -H "Content-Type: application/json" \
+     -d '{"refreshToken":"YOUR_CURRENT_REFRESH_TOKEN"}'
+   ```
+
+2. Extract the `refreshToken` field from the JSON response:
+   ```json
+   {
+     "token": "eyJraWQiOiI...",        // This is the access token (expires in 5 min)
+     "expiresIn": 300,
+     "refreshToken": "eyJjdHkiOiJKV1QiLCJlbmMi..."  // ← Use THIS value for DC_REFRESH_TOKEN
+   }
+   ```
+
+3. Use only the `refreshToken` value (the long encrypted string) as your `DC_REFRESH_TOKEN`
 
 ### Configuration File
 
@@ -96,7 +134,8 @@ introspection:
 
 **Authentication:**
 - `headers.Authorization`: Automatically updated by token refresh system
-- The token in this section is managed by the server - it will be overwritten on startup and during refresh
+- The token in this field is managed by the server - it will be overwritten on startup and during refresh
+- You can put any placeholder value here (e.g., `Bearer placeholder`) - it will be replaced with a valid token
 
 **GraphOS Integration:**
 - `apollo-graph-ref`: Your graph reference in Apollo Studio (e.g., `docontrol-api@current`)
@@ -134,7 +173,11 @@ The server provides 4 MCP tools when introspection is enabled:
 
 **Note**: The `apollo_key` can reference environment variables using `${DC_API_KEY}` syntax.
 
-**Note**: The `Authorization` header is automatically managed by the token refresh system. You don't need to manually update it.
+**Note**: The `Authorization` header is automatically managed by the token refresh system. You don't need to manually update it. The server will:
+1. Read `DC_REFRESH_TOKEN` from the environment on startup
+2. Call the refresh endpoint to get a fresh access token
+3. Write the access token to `headers.Authorization` in the config file
+4. Automatically refresh the token every ~4 minutes (before the 5-minute expiration)
 
 ## Quick Start Setup Guide
 
@@ -202,13 +245,33 @@ introspection:
 You'll need two secrets from DoControl:
 
 1. **Refresh Token** (`DC_REFRESH_TOKEN`):
-   - Obtain from DoControl OAuth authentication flow
+   - Format: Long encrypted JWT string (e.g., `eyJjdHkiOiJKV1QiLCJlbmMi...`)
+   - ⚠️ **Important**: Use the `refreshToken` field from the auth API response, NOT the `token` field
+   - ⚠️ **Common mistake**: Don't paste the entire JSON response - only the refresh token string
    - This is a long-lived token used to get fresh access tokens
    - Keep this secret secure!
 
 2. **Apollo API Key** (`DC_API_KEY`):
    - Format: `service:docontrol-api:xxxxx`
    - Used to access Apollo Studio for schema registry
+
+**How to get your refresh token:**
+
+```bash
+# If you have an existing refresh token, get a new one:
+curl -X POST https://auth.prod.docontrol.io/refresh \
+  -H "Content-Type: application/json" \
+  -d '{"refreshToken":"YOUR_EXISTING_REFRESH_TOKEN"}'
+
+# Response will be:
+# {
+#   "token": "eyJraWQiOiI...",           // Access token (expires in 5 min) - DON'T USE THIS
+#   "expiresIn": 300,
+#   "refreshToken": "eyJjdHkiOiJKV1QiLCJlbmMi..."  // ← Use THIS as DC_REFRESH_TOKEN
+# }
+```
+
+Copy only the `refreshToken` value (the long encrypted string) - this is what goes in `DC_REFRESH_TOKEN`.
 
 ### Step 4: Configure Your MCP Client
 
@@ -365,10 +428,51 @@ The AI assistant will have access to all GraphQL queries and mutations from the 
 
 1. **Server Startup**: Reads `DC_REFRESH_TOKEN` from environment
 2. **Initial Refresh**: Immediately refreshes to get a valid access token
-3. **Config Update**: Writes access token to config file's `auth` section
+3. **Config Update**: Writes access token to config file's `headers.Authorization` field
 4. **Token Verification**: Verifies token works with a test GraphQL request
 5. **Background Task**: Monitors token expiration and refreshes 5 minutes before expiry
-6. **Automatic Updates**: Config file is automatically updated with new tokens
+6. **Automatic Updates**: Config file is automatically updated with new access tokens
+
+## Troubleshooting
+
+### 401 Unauthorized Errors
+
+If you're getting `401 Unauthorized` errors, check your `DC_REFRESH_TOKEN`:
+
+1. **Verify token format**:
+   ```bash
+   # Your DC_REFRESH_TOKEN should look like this (truncated):
+   eyJjdHkiOiJKV1QiLCJlbmMiOiJBMjU2R0NNIiwiYWxnIjoiUlNBLU9BRVAifQ.X3QJN9C5...
+   
+   # NOT like this (JSON):
+   {"token":"eyJ...","expiresIn":300,"refreshToken":"eyJ..."}
+   ```
+
+2. **Test your refresh token**:
+   ```bash
+   curl -X POST https://auth.prod.docontrol.io/refresh \
+     -H "Content-Type: application/json" \
+     -d "{\"refreshToken\":\"$DC_REFRESH_TOKEN\"}"
+   ```
+   
+   If this returns a JSON response with `token` and `refreshToken` fields, your token is valid.
+
+3. **Check the MCP server logs**:
+   ```bash
+   # Set RUST_LOG=debug to see detailed token refresh logs
+   RUST_LOG=debug dc-mcp-server config.yaml
+   ```
+
+4. **Common mistakes**:
+   - ❌ Using the `token` field (access token) instead of `refreshToken`
+   - ❌ Pasting the entire JSON response as `DC_REFRESH_TOKEN`
+   - ❌ Token has expired (refresh tokens do eventually expire)
+   - ❌ Wrong refresh URL (check `DC_REFRESH_URL`)
+
+5. **If all else fails**:
+   - Get a fresh refresh token from DoControl
+   - Restart your MCP client (Cursor/Claude Desktop) after updating the token
+   - Check that all environment variables are set correctly in your MCP config
 
 ## Development
 
