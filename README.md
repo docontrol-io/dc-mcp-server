@@ -36,7 +36,7 @@ The server requires these environment variables:
 ```bash
 # DoControl Token Refresh
 DC_TOKEN_REFRESH_ENABLED="true"
-DC_REFRESH_TOKEN="your-refresh-token-from-docontrol"
+DC_REFRESH_TOKEN="eyJjdHkiOiJKV1QiLCJlbmMiOiJBMjU2R0NNIiwiYWxnIjoiUlNBLU9BRVAifQ..."  # Encrypted refresh token (see Token Format below)
 DC_REFRESH_URL="https://auth.prod.docontrol.io/refresh"
 DC_GRAPHQL_ENDPOINT="https://apollo-gateway-v4-api.prod.docontrol.io/graphql"
 
@@ -46,6 +46,44 @@ DC_API_KEY="service:docontrol-api:your-apollo-key"
 # Optional: Override the hardcoded graph ref (defaults to "docontrol-api@current")
 # DC_GRAPH_REF="docontrol-api@current"
 ```
+
+### Token Format
+
+**IMPORTANT**: `DC_REFRESH_TOKEN` must be the encrypted refresh token string only, NOT the entire JSON response.
+
+✅ **Correct format** (encrypted JWT string):
+```
+eyJjdHkiOiJKV1QiLCJlbmMiOiJBMjU2R0NNIiwiYWxnIjoiUlNBLU9BRVAifQ.X3QJN9C5sg2b1W_fJJ8X...
+```
+
+❌ **Wrong format** (full JSON response):
+```json
+{
+  "token": "eyJraWQiOiI...",
+  "expiresIn": 300,
+  "refreshToken": "eyJjdHkiOiJKV1QiLCJlbmMi..."
+}
+```
+
+**How to get the correct refresh token:**
+
+1. Call the refresh endpoint to get a new token:
+   ```bash
+   curl -X POST https://auth.prod.docontrol.io/refresh \
+     -H "Content-Type: application/json" \
+     -d '{"refreshToken":"YOUR_CURRENT_REFRESH_TOKEN"}'
+   ```
+
+2. Extract the `refreshToken` field from the JSON response:
+   ```json
+   {
+     "token": "eyJraWQiOiI...",        // This is the access token (expires in 5 min)
+     "expiresIn": 300,
+     "refreshToken": "eyJjdHkiOiJKV1QiLCJlbmMi..."  // ← Use THIS value for DC_REFRESH_TOKEN
+   }
+   ```
+
+3. Use only the `refreshToken` value (the long encrypted string) as your `DC_REFRESH_TOKEN`
 
 ### Configuration File
 
@@ -105,7 +143,8 @@ introspection:
 
 **Authentication:**
 - `headers.Authorization`: Automatically updated by token refresh system
-- The token in this section is managed by the server - it will be overwritten on startup and during refresh
+- The token in this field is managed by the server - it will be overwritten on startup and during refresh
+- You can put any placeholder value here (e.g., `Bearer placeholder`) - it will be replaced with a valid token
 
 **GraphOS Integration:**
 - `apollo-graph-ref`: Your graph reference in Apollo Studio (e.g., `docontrol-api@current`)
@@ -143,7 +182,11 @@ The server provides 4 MCP tools when introspection is enabled:
 
 **Note**: The `apollo_key` can reference environment variables using `${DC_API_KEY}` syntax.
 
-**Note**: The `Authorization` header is automatically managed by the token refresh system. You don't need to manually update it.
+**Note**: The `Authorization` header is automatically managed by the token refresh system. You don't need to manually update it. The server will:
+1. Read `DC_REFRESH_TOKEN` from the environment on startup
+2. Call the refresh endpoint to get a fresh access token
+3. Write the access token to `headers.Authorization` in the config file
+4. Automatically refresh the token every ~4 minutes (before the 5-minute expiration)
 
 ## Quick Start Setup Guide
 
@@ -211,13 +254,33 @@ introspection:
 You'll need two secrets from DoControl:
 
 1. **Refresh Token** (`DC_REFRESH_TOKEN`):
-   - Obtain from DoControl OAuth authentication flow
+   - Format: Long encrypted JWT string (e.g., `eyJjdHkiOiJKV1QiLCJlbmMi...`)
+   - ⚠️ **Important**: Use the `refreshToken` field from the auth API response, NOT the `token` field
+   - ⚠️ **Common mistake**: Don't paste the entire JSON response - only the refresh token string
    - This is a long-lived token used to get fresh access tokens
    - Keep this secret secure!
 
 2. **Apollo API Key** (`DC_API_KEY`):
    - Format: `service:docontrol-api:xxxxx`
    - Used to access Apollo Studio for schema registry
+
+**How to get your refresh token:**
+
+```bash
+# If you have an existing refresh token, get a new one:
+curl -X POST https://auth.prod.docontrol.io/refresh \
+  -H "Content-Type: application/json" \
+  -d '{"refreshToken":"YOUR_EXISTING_REFRESH_TOKEN"}'
+
+# Response will be:
+# {
+#   "token": "eyJraWQiOiI...",           // Access token (expires in 5 min) - DON'T USE THIS
+#   "expiresIn": 300,
+#   "refreshToken": "eyJjdHkiOiJKV1QiLCJlbmMi..."  // ← Use THIS as DC_REFRESH_TOKEN
+# }
+```
+
+Copy only the `refreshToken` value (the long encrypted string) - this is what goes in `DC_REFRESH_TOKEN`.
 
 ### Step 4: Configure Your MCP Client
 
