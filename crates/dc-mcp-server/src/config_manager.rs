@@ -4,7 +4,7 @@ use crate::errors::McpError;
 use rmcp::model::ErrorCode;
 use std::fs;
 use std::path::Path;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info};
 
 pub struct ConfigManager {
     config_path: String,
@@ -18,16 +18,6 @@ impl ConfigManager {
     /// Update the authorization token in the config file
     pub fn update_auth_token(&self, new_token: &str) -> Result<(), McpError> {
         info!("🔧 Updating config file with new token...");
-
-        // Create backup
-        let timestamp = chrono::Utc::now().format("%Y%m%d_%H%M%S");
-        let backup_path = format!("{}.backup.{}", self.config_path, timestamp);
-
-        if let Err(e) = fs::copy(&self.config_path, &backup_path) {
-            warn!("Failed to create backup: {}", e);
-        } else {
-            info!("💾 Backup created: {}", backup_path);
-        }
 
         // Read current config
         let config_content = fs::read_to_string(&self.config_path).map_err(|e| {
@@ -156,9 +146,9 @@ headers:
         assert!(config_content.contains("Authorization: Bearer new_token"));
     }
 
-    /// Test config file backup creation
+    /// Test config file token update
     #[test]
-    fn test_config_backup_creation() {
+    fn test_config_token_update() {
         let temp_dir = TempDir::new().unwrap();
         let config_path = temp_dir.path().join("test_config.yaml");
 
@@ -171,26 +161,13 @@ headers:
 
         let config_manager = ConfigManager::new(config_path.to_string_lossy().to_string());
 
-        // Count files before update
-        let files_before: Vec<_> = fs::read_dir(temp_dir.path()).unwrap().collect();
-        let count_before = files_before.len();
-
         // Update token
         config_manager.update_auth_token("new_token").unwrap();
 
-        // Count files after update
-        let files_after: Vec<_> = fs::read_dir(temp_dir.path()).unwrap().collect();
-        let count_after = files_after.len();
-
-        // Should have one more file (backup)
-        assert_eq!(count_after, count_before + 1);
-
-        // Verify backup file exists
-        let backup_exists = fs::read_dir(temp_dir.path()).unwrap().any(|entry| {
-            let entry = entry.unwrap();
-            entry.path().to_string_lossy().contains(".backup.")
-        });
-        assert!(backup_exists, "Backup file should exist");
+        // Verify token was updated in the config file
+        let updated_config = fs::read_to_string(&config_path).unwrap();
+        assert!(updated_config.contains("Authorization: Bearer new_token"));
+        assert!(!updated_config.contains("old_token"));
     }
 
     /// Test config file verification

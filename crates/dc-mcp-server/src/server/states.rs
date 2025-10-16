@@ -5,7 +5,7 @@ use apollo_federation::{ApiSchemaOptions, Supergraph};
 use apollo_mcp_registry::uplink::schema::{SchemaState, event::Event as SchemaEvent};
 use futures::{FutureExt as _, Stream, StreamExt as _, stream};
 use reqwest::header::HeaderMap;
-use tokio::sync::RwLock;
+use tokio::sync::{Mutex, RwLock};
 use url::Url;
 
 use crate::{
@@ -14,6 +14,7 @@ use crate::{
     errors::{OperationError, ServerError},
     health::HealthCheckConfig,
     operations::MutationMode,
+    token_manager::TokenManager,
 };
 
 use super::{Server, ServerEvent, Transport};
@@ -54,6 +55,7 @@ struct Config {
     index_memory_bytes: usize,
     health_check: HealthCheckConfig,
     cors: CorsConfig,
+    token_manager: Option<Arc<Mutex<TokenManager>>>,
 }
 
 impl StateMachine {
@@ -89,6 +91,7 @@ impl StateMachine {
                 index_memory_bytes: server.index_memory_bytes,
                 health_check: server.health_check,
                 cors: server.cors,
+                token_manager: server.token_manager,
             },
         });
 

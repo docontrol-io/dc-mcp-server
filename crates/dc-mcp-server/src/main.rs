@@ -13,7 +13,7 @@ use dc_mcp_server::operations::OperationSource;
 use dc_mcp_server::server::Server;
 use dc_mcp_server::startup;
 use runtime::IdOrDefault;
-use tokio::sync::RwLock;
+use tokio::sync::{Mutex, RwLock};
 use tracing::{info, warn};
 
 mod runtime;
@@ -58,8 +58,8 @@ async fn main() -> anyhow::Result<()> {
     // Create shared headers that can be updated by token refresh
     let shared_headers = Arc::new(RwLock::new(config.headers.clone()));
 
-    // Check if token refresh is enabled
-    if startup::is_token_refresh_enabled() {
+    // Initialize token manager if token refresh is enabled
+    let token_manager = if startup::is_token_refresh_enabled() {
         if let (Some(refresh_token), Some(refresh_url), Some(graphql_endpoint), Some(config_file)) = (
             startup::get_refresh_token(),
             startup::get_refresh_url(),
@@ -67,24 +67,29 @@ async fn main() -> anyhow::Result<()> {
             config_path.as_ref(),
         ) {
             info!("Token refresh enabled, initializing...");
-            if let Err(e) = startup::initialize_with_token_refresh(
+            match startup::create_token_manager(
                 config_file.to_string_lossy().to_string(),
                 refresh_token,
                 refresh_url,
                 graphql_endpoint,
                 Arc::clone(&shared_headers),
-            )
-            .await
-            {
-                warn!("Token refresh initialization failed: {}", e);
-            } else {
-                // Token has been refreshed and shared_headers updated by initialize_with_token_refresh
-                info!("✅ Token refresh initialization complete");
+            ) {
+                Ok(tm) => {
+                    info!("✅ Token manager ready - will refresh tokens on-demand before requests");
+                    Some(Arc::new(Mutex::new(tm)))
+                }
+                Err(e) => {
+                    warn!("Token manager initialization failed: {}", e);
+                    None
+                }
             }
         } else {
             warn!("Token refresh enabled but missing required environment variables");
+            None
         }
-    }
+    } else {
+        None
+    };
 
     let schema_source = match config.schema {
         runtime::SchemaSource::Local { path } => SchemaSource::File { path, watch: true },
@@ -185,6 +190,7 @@ async fn main() -> anyhow::Result<()> {
         .index_memory_bytes(config.introspection.search.index_memory_bytes)
         .health_check(config.health_check)
         .cors(config.cors)
+        .maybe_token_manager(token_manager)
         .build()
         .start()
         .await?)

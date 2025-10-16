@@ -4,96 +4,50 @@ use crate::config_manager::ConfigManager;
 use crate::errors::McpError;
 use crate::token_manager::TokenManager;
 use reqwest::header::HeaderMap;
-use rmcp::model::ErrorCode;
 use std::env;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{debug, info, warn};
+use tracing::{info, warn};
 
-/// Initialize the Apollo MCP Server with token refresh and environment setup
-pub async fn initialize_with_token_refresh(
+/// Create and configure a TokenManager for on-demand token refresh
+/// Returns the TokenManager which will refresh tokens when needed before requests
+pub fn create_token_manager(
     config_path: String,
     refresh_token: String,
     refresh_url: String,
-    graphql_endpoint: String,
+    _graphql_endpoint: String,
     shared_headers: Arc<RwLock<HeaderMap>>,
-) -> Result<(), McpError> {
+) -> Result<TokenManager, McpError> {
     info!("🎯 Apollo MCP Server initializing with token refresh...");
+    info!("📝 Config path: {}", config_path);
+    info!("🔗 Refresh URL: {}", refresh_url);
 
     // Step 1: Create shared config manager
+    info!("Step 1: Creating config manager...");
     let config_manager = Arc::new(ConfigManager::new(config_path.clone()));
+
+    info!("Step 1a: Verifying config...");
     config_manager.verify_config().map_err(|e| {
         warn!("Config verification failed: {}", e);
         e
     })?;
+    info!("✅ Config verified");
 
     // Step 2: Initialize token manager with injected config manager and headers
+    info!("Step 2: Creating token manager...");
     let mut token_manager = TokenManager::new(refresh_token, refresh_url)?;
+    info!("✅ Token manager created");
+
+    info!("Step 2a: Setting config manager...");
     token_manager.set_config_manager(Arc::clone(&config_manager));
+    info!("✅ Config manager set");
+
+    info!("Step 2b: Setting headers...");
     token_manager.set_headers(Arc::clone(&shared_headers));
+    info!("✅ Headers set");
 
-    // Step 3: Get fresh token (will automatically write to config)
-    let new_token = token_manager.get_valid_token().await.map_err(|e| {
-        warn!("Token refresh failed: {}", e);
-        e
-    })?;
-
-    // Step 4: Verify the new token
-    if !token_manager
-        .verify_token(&new_token, &graphql_endpoint)
-        .await
-        .map_err(|e| {
-            warn!("Token verification failed: {}", e);
-            e
-        })?
-    {
-        return Err(McpError::new(
-            ErrorCode::INTERNAL_ERROR,
-            "Token verification failed after refresh".to_string(),
-            None,
-        ));
-    }
-
-    // Step 5: Start background token refresh task
-    token_manager.start_refresh_task(graphql_endpoint).await;
-
-    // Step 6: Set up environment variables
-    setup_environment_variables();
-
-    info!("✅ Apollo MCP Server initialization complete");
-    Ok(())
-}
-
-/// Set up environment variables for optimal HTTP client behavior
-fn setup_environment_variables() {
-    info!("🔧 Setting up environment variables...");
-
-    unsafe {
-        // Set environment variables to match curl behavior
-        env::set_var("RUSTLS_SYSTEM_CERT_ROOT", "1"); // Use system certificates like curl
-        env::set_var("HTTP_PROXY", ""); // Disable proxy
-        env::set_var("HTTPS_PROXY", ""); // Disable HTTPS proxy
-        env::set_var("NO_PROXY", ""); // Clear no-proxy list
-        env::set_var("RUST_LOG", "error"); // Set logging level to error
-
-        // Set reqwest-specific environment variables
-        env::set_var("REQWEST_TIMEOUT", "30"); // 30 second timeout
-        env::set_var("REQWEST_CONNECT_TIMEOUT", "10"); // 10 second connect timeout
-        env::set_var("REQWEST_USER_AGENT", "curl/8.4.0"); // Match curl user agent
-        env::set_var("REQWEST_SSL_VERIFY", "true"); // Enable SSL verification
-        env::set_var("REQWEST_SSL_VERIFY_HOSTNAME", "true"); // Enable hostname verification
-    }
-
-    debug!("Environment variables set:");
-    debug!("   RUSTLS_SYSTEM_CERT_ROOT=1");
-    debug!("   HTTP_PROXY=");
-    debug!("   HTTPS_PROXY=");
-    debug!("   RUST_LOG=error");
-    debug!("   REQWEST_TIMEOUT=30");
-    debug!("   REQWEST_CONNECT_TIMEOUT=10");
-    debug!("   REQWEST_USER_AGENT=curl/8.4.0");
-    debug!("   REQWEST_SSL_VERIFY=true");
-    debug!("   REQWEST_SSL_VERIFY_HOSTNAME=true");
+    info!("✅ Apollo MCP Server token manager ready for on-demand refresh");
+    Ok(token_manager)
 }
 
 /// Check if token refresh is enabled via environment variables
