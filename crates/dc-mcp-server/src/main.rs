@@ -59,7 +59,7 @@ async fn main() -> anyhow::Result<()> {
     let shared_headers = Arc::new(RwLock::new(config.headers.clone()));
 
     // Check if token refresh is enabled
-    if startup::is_token_refresh_enabled() {
+    let token_manager = if startup::is_token_refresh_enabled() {
         if let (Some(refresh_token), Some(refresh_url), Some(config_file)) = (
             startup::get_refresh_token(),
             startup::get_refresh_url(),
@@ -71,25 +71,29 @@ async fn main() -> anyhow::Result<()> {
             
             if let Some(endpoint) = graphql_endpoint {
                 info!("Token refresh enabled, initializing...");
-                if let Err(e) = startup::initialize_with_token_refresh(
+                match startup::create_token_manager(
                     config_file.to_string_lossy().to_string(),
                     refresh_token,
                     refresh_url,
                     endpoint,
                     Arc::clone(&shared_headers),
-                )
-                .await
-                {
-                    warn!("Token refresh initialization failed: {}", e);
-                } else {
-                    // Token has been refreshed and shared_headers updated by initialize_with_token_refresh
-                    info!("✅ Token refresh initialization complete");
+                ) {
+                    Ok(tm) => {
+                        info!("✅ Token refresh initialization complete");
+                        Some(Arc::new(Mutex::new(tm)))
+                    }
+                    Err(e) => {
+                        warn!("Token refresh initialization failed: {}", e);
+                        None
+                    }
                 }
             } else {
                 warn!("Token refresh enabled but no GraphQL endpoint found (set DC_GRAPHQL_ENDPOINT or endpoint in config)");
+                None
             }
         } else {
             warn!("Token refresh enabled but missing required environment variables (DC_REFRESH_TOKEN, DC_REFRESH_URL)");
+            None
         }
     } else {
         None
