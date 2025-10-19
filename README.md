@@ -47,7 +47,7 @@ DC_REFRESH_URL="https://auth.prod.docontrol.io/refresh"
 DC_GRAPHQL_ENDPOINT="https://apollo-gateway-v4-api.prod.docontrol.io/graphql"
 
 # Apollo GraphOS API Key (OPTIONAL - recommended to put in config.yaml)
-DC_API_KEY="service:docontrol-api:your-apollo-key"
+DC_API_KEY="service:docontrol-api:your-apollo_key"
 
 # Graph Reference Override (OPTIONAL - defaults to "docontrol-api@current")
 # DC_GRAPH_REF="docontrol-api@current"
@@ -73,8 +73,8 @@ headers:
 
 # Apollo GraphOS integration
 graphos:
-  apollo-graph-ref: docontrol-api@current
-  apollo-key: service:docontrol-api:your-apollo-key
+  apollo_graph_ref: docontrol-api@current
+  apollo_key: service:docontrol-api:your-apollo_key
 
 # Mutation mode: "none" (read-only), "all" (full access)
 allow-mutations: none
@@ -117,8 +117,8 @@ introspection:
 - You can put any placeholder value here (e.g., `Bearer placeholder`) - it will be replaced with a valid token
 
 **GraphOS Integration:**
-- `apollo-graph-ref`: Your graph reference in Apollo Studio (e.g., `docontrol-api@current`)
-- `apollo-key`: Your Apollo Studio API key for schema registry access
+- `apollo_graph_ref`: Your graph reference in Apollo Studio (e.g., `docontrol-api@current`)
+- `apollo_key`: Your Apollo Studio API key for schema registry access
 
 **Security:**
 - `allow-mutations`: Set to `none` for read-only access, `all` to allow mutations
@@ -167,8 +167,8 @@ The server provides 4 MCP tools when introspection is enabled:
 | **Refresh Token** | `DC_REFRESH_TOKEN` | ❌ Not supported | ✅ Keep in env (security) |
 | **Refresh URL** | `DC_REFRESH_URL` | ❌ Not supported | ✅ Keep in env |
 | **GraphQL Endpoint** | `DC_GRAPHQL_ENDPOINT` | `endpoint` | ✅ **Move to config** (cleaner) |
-| **Apollo API Key** | `DC_API_KEY` | `graphos.apollo-key` | ✅ **Move to config** (cleaner) |
-| **Graph Ref** | `DC_GRAPH_REF` | `graphos.apollo-graph-ref` | ⚠️ Either (defaults to hardcoded value) |
+| **Apollo API Key** | `DC_API_KEY` | `graphos.apollo_key` | ✅ **Move to config** (cleaner) |
+| **Graph Ref** | `DC_GRAPH_REF` | `graphos.apollo_graph_ref` | ⚠️ Either (defaults to hardcoded value) |
 
 ### Recommended Setup
 
@@ -199,8 +199,8 @@ transport:
 headers:
   Authorization: Bearer placeholder  # Auto-updated
 graphos:
-  apollo-graph-ref: docontrol-api@current
-  apollo-key: service:docontrol-api:YOUR_APOLLO_KEY  # ← Put DC_API_KEY here
+  apollo_graph_ref: docontrol-api@current
+  apollo_key: service:docontrol-api:YOUR_APOLLO_KEY  # ← Put DC_API_KEY here
 allow-mutations: none
 operations:
   - introspect
@@ -250,8 +250,8 @@ transport:
 headers:
   Authorization: Bearer placeholder  # Will be auto-updated
 graphos:
-  apollo-graph-ref: docontrol-api@current
-  apollo-key: service:docontrol-api:YOUR_APOLLO_KEY_HERE
+  apollo_graph_ref: docontrol-api@current
+  apollo_key: service:docontrol-api:YOUR_APOLLO_KEY_HERE
 allow-mutations: none
 operations:
   - introspect
@@ -444,14 +444,14 @@ The AI assistant will have access to all GraphQL queries and mutations from the 
 
 - ✅ **Never commit credentials** to version control
 - ✅ **Use environment variables for sensitive tokens** (`DC_REFRESH_TOKEN`)
-- ✅ **Store API keys in config files** (`graphos.apollo-key`) - easier to manage, can be encrypted at rest
+- ✅ **Store API keys in config files** (`graphos.apollo_key`) - easier to manage, can be encrypted at rest
 - ✅ **Store tokens securely** - use secret management systems (e.g., 1Password, AWS Secrets Manager)
 - ✅ **Rotate tokens regularly** - follow DoControl security best practices
 - ✅ **Limit permissions** - use read-only tokens when possible (set `allow-mutations: none`)
 
 **Secrets to protect:**
 - `DC_REFRESH_TOKEN` - DoControl OAuth refresh token (keep in environment variables)
-- `graphos.apollo-key` - Apollo Studio API key (can be in config file with proper file permissions)
+- `graphos.apollo_key` - Apollo Studio API key (can be in config file with proper file permissions)
 - Config files containing tokens (set appropriate file permissions: `chmod 600 config.yaml`)
 
 ## How Token Refresh Works
