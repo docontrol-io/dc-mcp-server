@@ -97,11 +97,22 @@ impl TokenManager {
         if let Some(token) = &self.access_token
             && let Some(expires_at) = self.token_expires_at
         {
-            // Refresh token 5 minutes before expiry
-            if expires_at.duration_since(Instant::now()) > Duration::from_secs(300) {
-                debug!("Using existing valid token");
+            // Check how much time remains until expiry
+            let remaining = expires_at.saturating_duration_since(Instant::now());
+
+            // Refresh token if less than 2 minutes remaining (token lifetime is 5 minutes)
+            if remaining > Duration::from_secs(120) {
+                debug!(
+                    "Using existing valid token (expires in {}s)",
+                    remaining.as_secs()
+                );
                 return Ok(token.clone());
             }
+
+            info!(
+                "⏰ Token approaching expiry ({}s remaining), refreshing proactively",
+                remaining.as_secs()
+            );
         }
 
         // Need to refresh token

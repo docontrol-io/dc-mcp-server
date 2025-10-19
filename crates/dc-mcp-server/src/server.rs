@@ -6,7 +6,7 @@ use bon::bon;
 use reqwest::header::{CONTENT_TYPE, HeaderMap, HeaderValue};
 use schemars::JsonSchema;
 use serde::Deserialize;
-use tokio::sync::RwLock;
+use tokio::sync::{Mutex, RwLock};
 use url::Url;
 
 use crate::auth;
@@ -16,6 +16,7 @@ use crate::errors::ServerError;
 use crate::event::Event as ServerEvent;
 use crate::health::HealthCheckConfig;
 use crate::operations::{MutationMode, OperationSource};
+use crate::token_manager::TokenManager;
 
 mod states;
 
@@ -45,6 +46,7 @@ pub struct Server {
     index_memory_bytes: usize,
     health_check: HealthCheckConfig,
     cors: CorsConfig,
+    token_manager: Option<Arc<Mutex<TokenManager>>>,
 }
 
 #[derive(Debug, Clone, Deserialize, Default, JsonSchema)]
@@ -131,6 +133,7 @@ impl Server {
         index_memory_bytes: usize,
         health_check: HealthCheckConfig,
         cors: CorsConfig,
+        token_manager: Option<Arc<Mutex<TokenManager>>>,
     ) -> Self {
         let headers = {
             let mut headers = headers.clone();
@@ -160,6 +163,7 @@ impl Server {
             index_memory_bytes,
             health_check,
             cors,
+            token_manager,
         }
     }
 

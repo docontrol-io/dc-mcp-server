@@ -14,11 +14,20 @@ This wrapper handles DoControl's OAuth token refresh flow automatically:
 
 ### How It Works
 
-1. **Token Refresh**: Uses `DC_REFRESH_TOKEN` to obtain fresh access tokens from `DC_REFRESH_URL`
-2. **Auto-Refresh**: Tokens are automatically refreshed before expiration (5 minutes before)
+1. **On-Demand Refresh**: Tokens are refreshed automatically before each request when needed
+2. **Smart Detection**: Refreshes if token has less than 2 minutes remaining (out of 5-minute lifetime)
 3. **Config Update**: Fresh tokens are written back to the config file's auth section
-4. **Background Task**: A background task continuously monitors and refreshes tokens
-5. **GraphQL Requests**: All operations use the current valid access token
+4. **Shared Headers**: Tokens are updated in both config file and in-memory headers atomically
+5. **No Background Tasks**: Refresh happens synchronously when needed, not in background
+6. **GraphQL Requests**: All operations use the current valid access token
+
+This approach ensures:
+- ✅ **No wasted refreshes** - Only refresh when token is actually needed
+- ✅ **No startup delay** - Server starts instantly without initial token verification
+- ✅ **Thread-safe** - Global token manager accessible from all request handlers
+- ✅ **Reliable** - Synchronous refresh ensures token is valid before each request
+
+**Note**: DoControl tokens have a 5-minute lifetime. The server refreshes tokens on-demand before executing requests to ensure they're always valid.
 
 ### Environment Variables
 
@@ -27,7 +36,7 @@ This wrapper handles DoControl's OAuth token refresh flow automatically:
 ```bash
 # DoControl Token Refresh (Required)
 DC_TOKEN_REFRESH_ENABLED="true"
-DC_REFRESH_TOKEN="your-refresh-token-from-docontrol"
+DC_REFRESH_TOKEN="eyJjdHkiOiJKV1QiLCJlbmMiOiJBMjU2R0NNIiwiYWxnIjoiUlNBLU9BRVAifQ..."  # Encrypted refresh token (see Token Format below)
 DC_REFRESH_URL="https://auth.prod.docontrol.io/refresh"
 ```
 
@@ -104,7 +113,8 @@ introspection:
 
 **Authentication:**
 - `headers.Authorization`: Automatically updated by token refresh system
-- The token in this section is managed by the server - it will be overwritten on startup and during refresh
+- The token in this field is managed by the server - it will be overwritten on startup and during refresh
+- You can put any placeholder value here (e.g., `Bearer placeholder`) - it will be replaced with a valid token
 
 **GraphOS Integration:**
 - `apollo-graph-ref`: Your graph reference in Apollo Studio (e.g., `docontrol-api@current`)
@@ -142,7 +152,11 @@ The server provides 4 MCP tools when introspection is enabled:
 
 **Note**: The `apollo_key` can reference environment variables using `${DC_API_KEY}` syntax, but it's recommended to put the actual value directly in the config file.
 
-**Note**: The `Authorization` header is automatically managed by the token refresh system. You don't need to manually update it.
+**Note**: The `Authorization` header is automatically managed by the token refresh system. You don't need to manually update it. The server will:
+1. Read `DC_REFRESH_TOKEN` from the environment on startup
+2. Call the refresh endpoint to get a fresh access token
+3. Write the access token to `headers.Authorization` in the config file
+4. Automatically refresh the token every ~4 minutes (before the 5-minute expiration)
 
 ## Environment Variable vs Config File
 
@@ -265,13 +279,33 @@ introspection:
 You'll need two secrets from DoControl:
 
 1. **Refresh Token** (`DC_REFRESH_TOKEN`):
-   - Obtain from DoControl OAuth authentication flow
+   - Format: Long encrypted JWT string (e.g., `eyJjdHkiOiJKV1QiLCJlbmMi...`)
+   - ⚠️ **Important**: Use the `refreshToken` field from the auth API response, NOT the `token` field
+   - ⚠️ **Common mistake**: Don't paste the entire JSON response - only the refresh token string
    - This is a long-lived token used to get fresh access tokens
    - Keep this secret secure!
 
 2. **Apollo API Key** (`DC_API_KEY`):
    - Format: `service:docontrol-api:xxxxx`
    - Used to access Apollo Studio for schema registry
+
+**How to get your refresh token:**
+
+```bash
+# If you have an existing refresh token, get a new one:
+curl -X POST https://auth.prod.docontrol.io/refresh \
+  -H "Content-Type: application/json" \
+  -d '{"refreshToken":"YOUR_EXISTING_REFRESH_TOKEN"}'
+
+# Response will be:
+# {
+#   "token": "eyJraWQiOiI...",           // Access token (expires in 5 min) - DON'T USE THIS
+#   "expiresIn": 300,
+#   "refreshToken": "eyJjdHkiOiJKV1QiLCJlbmMi..."  // ← Use THIS as DC_REFRESH_TOKEN
+# }
+```
+
+Copy only the `refreshToken` value (the long encrypted string) - this is what goes in `DC_REFRESH_TOKEN`.
 
 ### Step 4: Configure Your MCP Client
 
@@ -422,12 +456,34 @@ The AI assistant will have access to all GraphQL queries and mutations from the 
 
 ## How Token Refresh Works
 
+The server uses an intelligent on-demand token refresh strategy:
+
+### Startup
 1. **Server Startup**: Reads `DC_REFRESH_TOKEN` from environment
-2. **Initial Refresh**: Immediately refreshes to get a valid access token
-3. **Config Update**: Writes access token to config file's `auth` section
-4. **Token Verification**: Verifies token works with a test GraphQL request
-5. **Background Task**: Monitors token expiration and refreshes 5 minutes before expiry
-6. **Automatic Updates**: Config file is automatically updated with new tokens
+2. **No Initial Refresh**: Server starts immediately without fetching tokens
+3. **Global Token Manager**: TokenManager is initialized and stored globally
+4. **Fast Startup**: No blocking network calls during initialization
+
+### During Operation
+1. **Before Each Request**: Token manager checks if current token is valid
+2. **Token Expiry Check**: Refreshes if less than 2 minutes remaining (out of 5-minute lifetime)
+3. **Synchronous Refresh**: If needed, refreshes token before executing the request
+4. **Atomic Updates**: Updates both config file and in-memory headers together
+5. **Error Handling**: If refresh fails, request proceeds with current token
+
+### Token Lifetime
+- **DoControl tokens expire after 5 minutes**
+- **Refresh threshold: 2 minutes remaining** - ensures token won't expire during request
+- First request after startup will always refresh (no initial token)
+- Token is reused across multiple requests within the 3-minute window (5min - 2min threshold)
+- Proactive refresh prevents mid-request token expiry
+
+### Benefits
+- **Efficient**: Tokens are reused across multiple requests
+- **Reliable**: Token is always validated before use
+- **Fast Startup**: Server is ready instantly
+- **Thread-Safe**: Global static ensures safe concurrent access
+- **No Background Tasks**: Simpler architecture, easier to debug
 
 ## Development
 

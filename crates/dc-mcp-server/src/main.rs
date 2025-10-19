@@ -13,7 +13,7 @@ use dc_mcp_server::operations::OperationSource;
 use dc_mcp_server::server::Server;
 use dc_mcp_server::startup;
 use runtime::IdOrDefault;
-use tokio::sync::RwLock;
+use tokio::sync::{Mutex, RwLock};
 use tracing::{info, warn};
 
 mod runtime;
@@ -91,7 +91,9 @@ async fn main() -> anyhow::Result<()> {
         } else {
             warn!("Token refresh enabled but missing required environment variables (DC_REFRESH_TOKEN, DC_REFRESH_URL)");
         }
-    }
+    } else {
+        None
+    };
 
     let schema_source = match config.schema {
         runtime::SchemaSource::Local { path } => SchemaSource::File { path, watch: true },
@@ -192,6 +194,7 @@ async fn main() -> anyhow::Result<()> {
         .index_memory_bytes(config.introspection.search.index_memory_bytes)
         .health_check(config.health_check)
         .cors(config.cors)
+        .maybe_token_manager(token_manager)
         .build()
         .start()
         .await?)
