@@ -60,29 +60,36 @@ async fn main() -> anyhow::Result<()> {
 
     // Check if token refresh is enabled
     if startup::is_token_refresh_enabled() {
-        if let (Some(refresh_token), Some(refresh_url), Some(graphql_endpoint), Some(config_file)) = (
+        if let (Some(refresh_token), Some(refresh_url), Some(config_file)) = (
             startup::get_refresh_token(),
             startup::get_refresh_url(),
-            startup::get_graphql_endpoint(),
             config_path.as_ref(),
         ) {
-            info!("Token refresh enabled, initializing...");
-            if let Err(e) = startup::initialize_with_token_refresh(
-                config_file.to_string_lossy().to_string(),
-                refresh_token,
-                refresh_url,
-                graphql_endpoint,
-                Arc::clone(&shared_headers),
-            )
-            .await
-            {
-                warn!("Token refresh initialization failed: {}", e);
+            // Get GraphQL endpoint from env or config
+            let graphql_endpoint = startup::get_graphql_endpoint()
+                .or_else(|| Some(config.endpoint.to_string()));
+            
+            if let Some(endpoint) = graphql_endpoint {
+                info!("Token refresh enabled, initializing...");
+                if let Err(e) = startup::initialize_with_token_refresh(
+                    config_file.to_string_lossy().to_string(),
+                    refresh_token,
+                    refresh_url,
+                    endpoint,
+                    Arc::clone(&shared_headers),
+                )
+                .await
+                {
+                    warn!("Token refresh initialization failed: {}", e);
+                } else {
+                    // Token has been refreshed and shared_headers updated by initialize_with_token_refresh
+                    info!("✅ Token refresh initialization complete");
+                }
             } else {
-                // Token has been refreshed and shared_headers updated by initialize_with_token_refresh
-                info!("✅ Token refresh initialization complete");
+                warn!("Token refresh enabled but no GraphQL endpoint found (set DC_GRAPHQL_ENDPOINT or endpoint in config)");
             }
         } else {
-            warn!("Token refresh enabled but missing required environment variables");
+            warn!("Token refresh enabled but missing required environment variables (DC_REFRESH_TOKEN, DC_REFRESH_URL)");
         }
     }
 

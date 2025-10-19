@@ -22,21 +22,29 @@ This wrapper handles DoControl's OAuth token refresh flow automatically:
 
 ### Environment Variables
 
-The server requires these environment variables:
+**Required environment variables** (must be in MCP client config):
 
 ```bash
-# DoControl Token Refresh
+# DoControl Token Refresh (Required)
 DC_TOKEN_REFRESH_ENABLED="true"
 DC_REFRESH_TOKEN="your-refresh-token-from-docontrol"
 DC_REFRESH_URL="https://auth.prod.docontrol.io/refresh"
+```
+
+**Optional environment variables** (recommended to move to config file):
+
+```bash
+# GraphQL Endpoint (OPTIONAL - recommended to put in config.yaml as 'endpoint')
 DC_GRAPHQL_ENDPOINT="https://apollo-gateway-v4-api.prod.docontrol.io/graphql"
 
-# Apollo GraphOS API Key
+# Apollo GraphOS API Key (OPTIONAL - recommended to put in config.yaml)
 DC_API_KEY="service:docontrol-api:your-apollo-key"
 
-# Optional: Override the hardcoded graph ref (defaults to "docontrol-api@current")
+# Graph Reference Override (OPTIONAL - defaults to "docontrol-api@current")
 # DC_GRAPH_REF="docontrol-api@current"
 ```
+
+**💡 Recommendation**: Move `DC_GRAPHQL_ENDPOINT` and `DC_API_KEY` to your config file (see below) to keep all non-sensitive configuration in one place.
 
 ### Configuration File
 
@@ -132,9 +140,64 @@ The server provides 4 MCP tools when introspection is enabled:
    - Schema validation
    - Helpful for debugging
 
-**Note**: The `apollo_key` can reference environment variables using `${DC_API_KEY}` syntax.
+**Note**: The `apollo_key` can reference environment variables using `${DC_API_KEY}` syntax, but it's recommended to put the actual value directly in the config file.
 
 **Note**: The `Authorization` header is automatically managed by the token refresh system. You don't need to manually update it.
+
+## Environment Variable vs Config File
+
+### What Goes Where?
+
+| Setting | Environment Variable | Config File | Recommendation |
+|---------|---------------------|-------------|----------------|
+| **Refresh Token** | `DC_REFRESH_TOKEN` | ❌ Not supported | ✅ Keep in env (security) |
+| **Refresh URL** | `DC_REFRESH_URL` | ❌ Not supported | ✅ Keep in env |
+| **GraphQL Endpoint** | `DC_GRAPHQL_ENDPOINT` | `endpoint` | ✅ **Move to config** (cleaner) |
+| **Apollo API Key** | `DC_API_KEY` | `graphos.apollo-key` | ✅ **Move to config** (cleaner) |
+| **Graph Ref** | `DC_GRAPH_REF` | `graphos.apollo-graph-ref` | ⚠️ Either (defaults to hardcoded value) |
+
+### Recommended Setup
+
+**Minimal MCP Client Config** (`~/.cursor/mcp.json`):
+```json
+{
+  "mcpServers": {
+    "docontrol-mcp-server": {
+      "command": "/usr/local/bin/dc-mcp-server",
+      "args": ["/path/to/config.yaml"],
+      "env": {
+        "DC_TOKEN_REFRESH_ENABLED": "true",
+        "DC_REFRESH_TOKEN": "YOUR_REFRESH_TOKEN",
+        "DC_REFRESH_URL": "https://auth.prod.docontrol.io/refresh",
+        "RUST_LOG": "info",
+        "RUSTLS_SYSTEM_CERT_ROOT": "1"
+      }
+    }
+  }
+}
+```
+
+**Complete Config File** (`config.yaml`):
+```yaml
+endpoint: https://apollo-gateway-v4-api.prod.docontrol.io/graphql
+transport:
+  type: stdio
+headers:
+  Authorization: Bearer placeholder  # Auto-updated
+graphos:
+  apollo-graph-ref: docontrol-api@current
+  apollo-key: service:docontrol-api:YOUR_APOLLO_KEY  # ← Put DC_API_KEY here
+allow-mutations: none
+operations:
+  - introspect
+```
+
+**Benefits of this approach**:
+- ✅ Sensitive tokens stay in environment variables (more secure)
+- ✅ Non-sensitive config (API keys, endpoints) in config file (easier to manage)
+- ✅ Config file can be version controlled (without secrets)
+- ✅ Easier to update non-sensitive settings without restarting MCP client
+- ✅ No duplication - `endpoint` and `DC_GRAPHQL_ENDPOINT` are the same, so just use config file
 
 ## Quick Start Setup Guide
 
@@ -226,8 +289,6 @@ Edit `~/.cursor/mcp.json`:
         "DC_TOKEN_REFRESH_ENABLED": "true",
         "DC_REFRESH_TOKEN": "YOUR_REFRESH_TOKEN_HERE",
         "DC_REFRESH_URL": "https://auth.prod.docontrol.io/refresh",
-        "DC_GRAPHQL_ENDPOINT": "https://apollo-gateway-v4-api.prod.docontrol.io/graphql",
-        "DC_API_KEY": "service:docontrol-api:YOUR_KEY_HERE",
         "RUST_LOG": "info",
         "RUSTLS_SYSTEM_CERT_ROOT": "1"
       }
@@ -250,8 +311,6 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
         "DC_TOKEN_REFRESH_ENABLED": "true",
         "DC_REFRESH_TOKEN": "YOUR_REFRESH_TOKEN_HERE",
         "DC_REFRESH_URL": "https://auth.prod.docontrol.io/refresh",
-        "DC_GRAPHQL_ENDPOINT": "https://apollo-gateway-v4-api.prod.docontrol.io/graphql",
-        "DC_API_KEY": "service:docontrol-api:YOUR_KEY_HERE",
         "RUST_LOG": "info",
         "RUSTLS_SYSTEM_CERT_ROOT": "1"
       }
@@ -262,7 +321,8 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 **Important Notes:**
 - Use **absolute paths** for both the command and config file
-- Replace `YOUR_REFRESH_TOKEN_HERE` and `YOUR_KEY_HERE` with actual values
+- Replace `YOUR_REFRESH_TOKEN_HERE` with your actual refresh token
+- **DO NOT** include `DC_API_KEY` or `DC_GRAPHQL_ENDPOINT` here - they should be in your config.yaml file
 - The `RUSTLS_SYSTEM_CERT_ROOT=1` is required for SSL certificate validation
 
 ### Step 5: Restart Your MCP Client
@@ -290,10 +350,8 @@ For testing and debugging:
 export DC_TOKEN_REFRESH_ENABLED="true"
 export DC_REFRESH_TOKEN="your-refresh-token"
 export DC_REFRESH_URL="https://auth.prod.docontrol.io/refresh"
-export DC_GRAPHQL_ENDPOINT="https://apollo-gateway-v4-api.prod.docontrol.io/graphql"
-export DC_GRAPH_REF="docontrol-api@current"
-export DC_API_KEY="service:docontrol-api:your-key"
 
+# Note: DC_GRAPHQL_ENDPOINT and DC_API_KEY should be in your config.yaml file, not as env vars
 npx @modelcontextprotocol/inspector dc-mcp-server config.yaml
 ```
 
@@ -351,15 +409,16 @@ The AI assistant will have access to all GraphQL queries and mutations from the 
 **All credentials are secrets and should be protected:**
 
 - ✅ **Never commit credentials** to version control
-- ✅ **Use environment variables** instead of hardcoding in config files
+- ✅ **Use environment variables for sensitive tokens** (`DC_REFRESH_TOKEN`)
+- ✅ **Store API keys in config files** (`graphos.apollo-key`) - easier to manage, can be encrypted at rest
 - ✅ **Store tokens securely** - use secret management systems (e.g., 1Password, AWS Secrets Manager)
 - ✅ **Rotate tokens regularly** - follow DoControl security best practices
-- ✅ **Limit permissions** - use read-only tokens when possible
+- ✅ **Limit permissions** - use read-only tokens when possible (set `allow-mutations: none`)
 
 **Secrets to protect:**
-- `DC_REFRESH_TOKEN` - DoControl OAuth refresh token
-- `DC_API_KEY` - Apollo Studio API key
-- Config files containing tokens
+- `DC_REFRESH_TOKEN` - DoControl OAuth refresh token (keep in environment variables)
+- `graphos.apollo-key` - Apollo Studio API key (can be in config file with proper file permissions)
+- Config files containing tokens (set appropriate file permissions: `chmod 600 config.yaml`)
 
 ## How Token Refresh Works
 
