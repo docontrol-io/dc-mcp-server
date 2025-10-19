@@ -66,9 +66,9 @@ async fn main() -> anyhow::Result<()> {
             config_path.as_ref(),
         ) {
             // Get GraphQL endpoint from env or config
-            let graphql_endpoint = startup::get_graphql_endpoint()
-                .or_else(|| Some(config.endpoint.to_string()));
-            
+            let graphql_endpoint =
+                startup::get_graphql_endpoint().or_else(|| Some(config.endpoint.to_string()));
+
             if let Some(endpoint) = graphql_endpoint {
                 info!("Token refresh enabled, initializing...");
                 match startup::create_token_manager(
@@ -88,11 +88,15 @@ async fn main() -> anyhow::Result<()> {
                     }
                 }
             } else {
-                warn!("Token refresh enabled but no GraphQL endpoint found (set DC_GRAPHQL_ENDPOINT or endpoint in config)");
+                warn!(
+                    "Token refresh enabled but no GraphQL endpoint found (set DC_GRAPHQL_ENDPOINT or endpoint in config)"
+                );
                 None
             }
         } else {
-            warn!("Token refresh enabled but missing required environment variables (DC_REFRESH_TOKEN, DC_REFRESH_URL)");
+            warn!(
+                "Token refresh enabled but missing required environment variables (DC_REFRESH_TOKEN, DC_REFRESH_URL)"
+            );
             None
         }
     } else {
