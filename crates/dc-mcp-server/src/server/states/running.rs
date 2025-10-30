@@ -370,11 +370,22 @@ impl ServerHandler for Running {
             .u64_counter(TelemetryMetric::GetInfoCount.as_str())
             .build()
             .add(1, &[]);
+        
+        // Get customer ID from environment variable and append to server name
+        let server_name = match std::env::var("CUSTOMER_ID") {
+            Ok(customer_id) if !customer_id.is_empty() => {
+                format!("Apollo MCP Server - {}", customer_id)
+            }
+            _ => "Apollo MCP Server".to_string(),
+        };
+        
+        let server_title = server_name.clone();
+        
         ServerInfo {
             server_info: Implementation {
-                name: "Apollo MCP Server".to_string(),
+                name: server_name,
                 icons: None,
-                title: Some("Apollo MCP Server".to_string()),
+                title: Some(server_title),
                 version: env!("CARGO_PKG_VERSION").to_string(),
                 website_url: Some(
                     "https://www.apollographql.com/docs/apollo-mcp-server".to_string(),
