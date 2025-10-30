@@ -370,7 +370,7 @@ impl ServerHandler for Running {
             .u64_counter(TelemetryMetric::GetInfoCount.as_str())
             .build()
             .add(1, &[]);
-        
+
         // Get customer ID from environment variable and append to server name
         let server_name = match std::env::var("CUSTOMER_ID") {
             Ok(customer_id) if !customer_id.is_empty() => {
@@ -378,9 +378,9 @@ impl ServerHandler for Running {
             }
             _ => "Apollo MCP Server".to_string(),
         };
-        
+
         let server_title = server_name.clone();
-        
+
         ServerInfo {
             server_info: Implementation {
                 name: server_name,

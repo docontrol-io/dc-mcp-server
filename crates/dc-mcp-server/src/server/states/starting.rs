@@ -157,6 +157,7 @@ impl Starting {
             disable_schema_description: self.config.disable_schema_description,
             disable_auth_token_passthrough: self.config.disable_auth_token_passthrough,
             health_check: health_check.clone(),
+            token_manager: None,
         };
 
         // Helper to enable auth
