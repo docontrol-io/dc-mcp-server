@@ -370,7 +370,7 @@ impl ServerHandler for Running {
             .u64_counter(TelemetryMetric::GetInfoCount.as_str())
             .build()
             .add(1, &[]);
-        
+
         // Include customer/company identifier in the server name when provided via env.
         // Expected variable: CUSTOMER_ID (e.g., "Demo" or "Gilgamesh").
         let server_name = match std::env::var("CUSTOMER_ID") {
@@ -379,9 +379,9 @@ impl ServerHandler for Running {
             }
             _ => "Apollo MCP Server".to_string(),
         };
-        
+
         let server_title = server_name.clone();
-        
+
         ServerInfo {
             server_info: Implementation {
                 name: server_name,
