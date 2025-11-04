@@ -214,12 +214,17 @@ mod tests {
         http::{Request, StatusCode},
     };
     use http::header::{AUTHORIZATION, WWW_AUTHENTICATE};
-    use std::sync::Mutex;
+    use std::sync::OnceLock;
+    use tokio::sync::Mutex;
     use tower::ServiceExt; // for .oneshot()
     use url::Url;
 
     // Mutex to serialize tests that modify CUSTOMER_ID environment variable
-    static CUSTOMER_ID_TEST_MUTEX: Mutex<()> = Mutex::new(());
+    static CUSTOMER_ID_TEST_MUTEX: OnceLock<Mutex<()>> = OnceLock::new();
+
+    fn get_test_mutex() -> &'static Mutex<()> {
+        CUSTOMER_ID_TEST_MUTEX.get_or_init(|| Mutex::new(()))
+    }
 
     fn test_config() -> Config {
         Config {
@@ -368,7 +373,7 @@ mod tests {
 
     #[tokio::test]
     async fn enable_customer_id_validation_with_env_var() {
-        let _guard = CUSTOMER_ID_TEST_MUTEX.lock().unwrap();
+        let _guard = get_test_mutex().lock().await;
         // Save original env var if it exists
         let original = env::var("CUSTOMER_ID").ok();
 
@@ -418,7 +423,7 @@ mod tests {
 
     #[tokio::test]
     async fn enable_customer_id_validation_without_env_var() {
-        let _guard = CUSTOMER_ID_TEST_MUTEX.lock().unwrap();
+        let _guard = get_test_mutex().lock().await;
         // Save original env var if it exists
         let original = env::var("CUSTOMER_ID").ok();
 
@@ -456,7 +461,7 @@ mod tests {
 
     #[tokio::test]
     async fn enable_customer_id_validation_with_empty_env_var() {
-        let _guard = CUSTOMER_ID_TEST_MUTEX.lock().unwrap();
+        let _guard = get_test_mutex().lock().await;
         // Save original env var if it exists
         let original = env::var("CUSTOMER_ID").ok();
 
