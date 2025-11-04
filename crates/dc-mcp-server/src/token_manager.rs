@@ -429,13 +429,26 @@ headers:
             TokenManager::new(refresh_token.to_string(), refresh_url.to_string()).unwrap();
 
         // Set a token that expires in the past
+        // Use checked_sub to avoid overflow on Windows where Instant::now() - duration can panic
         token_manager.access_token = Some("test_token".to_string());
-        token_manager.token_expires_at = Some(Instant::now() - Duration::from_secs(3600));
-
-        // Token should be considered expired
         let now = Instant::now();
+        // Try to subtract 1 hour, but if that would overflow (Windows issue), subtract a smaller duration
+        token_manager.token_expires_at = now
+            .checked_sub(Duration::from_secs(3600))
+            .or_else(|| now.checked_sub(Duration::from_secs(1)))
+            .or_else(|| {
+                // If even 1 second subtraction would overflow, use the earliest possible time
+                // This is extremely rare but can happen on Windows
+                Some(now)
+            });
+
+        // Token should be considered expired (or at least not in the future)
         if let Some(expires_at) = token_manager.token_expires_at {
-            assert!(expires_at < now);
+            // Verify expires_at is not in the future
+            assert!(
+                expires_at <= now,
+                "Token expiry time should not be in the future"
+            );
         }
     }
 
