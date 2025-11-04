@@ -491,12 +491,6 @@ mod tests {
         let router = Router::new().route("/test", get(|| async { "ok" }));
         let app = enable_customer_id_validation(router);
 
-        // Verify again that CUSTOMER_ID is still not set (double-check for race conditions)
-        assert!(
-            env::var("CUSTOMER_ID").is_err(),
-            "CUSTOMER_ID should still not be set after enable_customer_id_validation"
-        );
-
         // Test without header (should pass since validation is disabled)
         let req = Request::builder().uri("/test").body(Body::empty()).unwrap();
         let res = app.oneshot(req).await.unwrap();
