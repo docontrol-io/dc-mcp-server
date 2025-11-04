@@ -184,6 +184,9 @@ impl ServerHandler for Running {
         request: InitializeRequestParam,
         context: RequestContext<RoleServer>,
     ) -> Result<InitializeResult, McpError> {
+        // Token refresh is deferred to first tool call to avoid blocking initialization
+        // The token will be refreshed automatically when needed before any request
+
         let meter = &meter::METER;
         let attributes = vec![
             KeyValue::new(

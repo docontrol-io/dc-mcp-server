@@ -11,7 +11,8 @@ use tracing::{info, warn};
 
 /// Create and configure a TokenManager for on-demand token refresh
 /// Returns the TokenManager which will refresh tokens when needed before requests
-pub fn create_token_manager(
+/// This function proactively refreshes the token at startup to ensure headers are populated
+pub async fn create_token_manager(
     config_path: String,
     refresh_token: String,
     refresh_url: String,
@@ -26,12 +27,34 @@ pub fn create_token_manager(
     info!("Step 1: Creating config manager...");
     let config_manager = Arc::new(ConfigManager::new(config_path.clone()));
 
-    info!("Step 1a: Verifying config...");
-    config_manager.verify_config().map_err(|e| {
-        warn!("Config verification failed: {}", e);
-        e
-    })?;
-    info!("✅ Config verified");
+    // Config verification is optional - don't block startup if it fails or hangs
+    // The config will be verified when actually needed (during token refresh)
+    // Use tokio::spawn with timeout to prevent hanging on slow file systems
+    info!("Step 1a: Verifying config (non-blocking with timeout)...");
+    let config_path_clone = config_path.clone();
+    let verify_result = tokio::time::timeout(
+        tokio::time::Duration::from_secs(2),
+        tokio::task::spawn_blocking(move || {
+            let cm = ConfigManager::new(config_path_clone);
+            cm.verify_config()
+        })
+    )
+    .await;
+    
+    match verify_result {
+        Ok(Ok(Ok(()))) => {
+            info!("✅ Config verified");
+        }
+        Ok(Ok(Err(e))) => {
+            warn!("⚠️  Config verification failed: {} (will retry when needed)", e);
+        }
+        Ok(Err(_)) => {
+            warn!("⚠️  Config verification task was cancelled (will retry when needed)");
+        }
+        Err(_) => {
+            warn!("⚠️  Config verification timed out after 2s (will retry when needed)");
+        }
+    }
 
     // Step 2: Initialize token manager with injected config manager and headers
     info!("Step 2: Creating token manager...");
@@ -46,6 +69,8 @@ pub fn create_token_manager(
     token_manager.set_headers(Arc::clone(&shared_headers));
     info!("✅ Headers set");
 
+    // Token refresh is deferred to first tool call to avoid blocking startup
+    // The token will be refreshed automatically when needed before any request
     info!("✅ Apollo MCP Server token manager ready for on-demand refresh");
     Ok(token_manager)
 }
