@@ -72,6 +72,7 @@ jobs:
           key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Build
+        shell: bash
         run: |
           if [ -n "${{ matrix.target }}" ]; then
             cargo build --release --package dc-mcp-server --target ${{ matrix.target }}
@@ -84,12 +85,14 @@ jobs:
 
       - name: Test (native targets only)
         if: matrix.target == ''
+        shell: bash
         run: |
           cargo test --workspace
           cargo clippy --all-targets --all-features -- -D warnings
           cargo fmt --all -- --check
 
-      - name: Create release package
+      - name: Create release package (Unix)
+        if: runner.os != 'Windows'
         shell: bash
         run: |
           RELEASE_DIR="release"
@@ -114,11 +117,42 @@ jobs:
           # Create tar.gz archive
           tar -czvf "${ARTIFACT_NAME}.tar.gz" -C "$RELEASE_DIR" "$ARTIFACT_NAME"
 
-      - name: Upload build artifact
+      - name: Create release package (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $RELEASE_DIR = "release"
+          $BIN_NAME = "${{ matrix.binary_path }}"
+          $ARTIFACT_NAME = "${{ matrix.artifact_name }}"
+          $VERSION = "${{ github.event.inputs.tag || github.ref_name }}"
+
+          New-Item -ItemType Directory -Force -Path "$RELEASE_DIR\$ARTIFACT_NAME" | Out-Null
+          Copy-Item "$BIN_NAME" "$RELEASE_DIR\$ARTIFACT_NAME\"
+          Copy-Item README.md "$RELEASE_DIR\$ARTIFACT_NAME\" -ErrorAction SilentlyContinue
+          Copy-Item LICENSE "$RELEASE_DIR\$ARTIFACT_NAME\" -ErrorAction SilentlyContinue
+
+          # Create checksums
+          $BINARY_FILE = Split-Path -Leaf "$BIN_NAME"
+          $FULL_PATH = "$RELEASE_DIR\$ARTIFACT_NAME\$BINARY_FILE"
+          $HASH = Get-FileHash -Path "$FULL_PATH" -Algorithm SHA256
+          "$($HASH.Hash)  $BINARY_FILE" | Out-File -FilePath "$RELEASE_DIR\$ARTIFACT_NAME\${BINARY_FILE}.sha256" -Encoding utf8
+
+          # Create zip archive
+          Compress-Archive -Path "$RELEASE_DIR\$ARTIFACT_NAME\*" -DestinationPath "${ARTIFACT_NAME}.zip" -Force
+
+      - name: Upload build artifact (Unix)
+        if: runner.os != 'Windows'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
           path: ${{ matrix.artifact_name }}.tar.gz
+
+      - name: Upload build artifact (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_name }}.zip
 
   release:
     name: Create Release
@@ -137,13 +171,14 @@ jobs:
         run: |
           mkdir -p release-assets
           find artifacts -name "*.tar.gz" -exec cp {} release-assets/ \;
+          find artifacts -name "*.zip" -exec cp {} release-assets/ \;
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           name: Release ${{ github.event.inputs.tag || github.ref_name }}
-          files: release-assets/*.tar.gz
+          files: release-assets/*
           draft: false
           prerelease: false
         env:
