@@ -13,7 +13,7 @@ on:
 
 jobs:
   build:
-    name: Build (${{ matrix.os }})
+    name: Build (${{ matrix.artifact_name }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -21,12 +21,19 @@ jobs:
           - os: ubuntu-latest
             artifact_name: dc-mcp-server-linux-x86_64
             binary_path: target/release/dc-mcp-server
+            target: ""
+          - os: ubuntu-latest
+            artifact_name: dc-mcp-server-linux-aarch64
+            binary_path: target/aarch64-unknown-linux-gnu/release/dc-mcp-server
+            target: aarch64-unknown-linux-gnu
           - os: macos-latest
             artifact_name: dc-mcp-server-macos-aarch64
             binary_path: target/release/dc-mcp-server
+            target: ""
           - os: windows-latest
             artifact_name: dc-mcp-server-windows-x86_64
             binary_path: target/release/dc-mcp-server.exe
+            target: ""
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -35,6 +42,16 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
+
+      - name: Install cross-compilation target
+        if: matrix.target != ''
+        run: rustup target add ${{ matrix.target }}
+
+      - name: Install cross-compilation tools (Linux ARM64)
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu libc6-dev-arm64-cross
 
       - name: Cache cargo registry
         uses: actions/cache@v4
@@ -54,9 +71,20 @@ jobs:
           path: target
           key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Build and Test
+      - name: Build
         run: |
-          cargo build --release --package dc-mcp-server
+          if [ -n "${{ matrix.target }}" ]; then
+            cargo build --release --package dc-mcp-server --target ${{ matrix.target }}
+          else
+            cargo build --release --package dc-mcp-server
+          fi
+        env:
+          CC_aarch64_unknown_linux_gnu: aarch64-linux-gnu-gcc
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+
+      - name: Test (native targets only)
+        if: matrix.target == ''
+        run: |
           cargo test --workspace
           cargo clippy --all-targets --all-features -- -D warnings
           cargo fmt --all -- --check
