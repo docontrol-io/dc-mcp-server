@@ -95,7 +95,12 @@ async fn oauth_validate(
     // Skip validation for health endpoints (load balancers don't send auth headers)
     let path = request.uri().path().to_string();
     if is_health_endpoint(&path) {
-        let response = skip_health_endpoint(request, next, "Skipping OAuth validation for health endpoint").await;
+        let response = skip_health_endpoint(
+            request,
+            next,
+            "Skipping OAuth validation for health endpoint",
+        )
+        .await;
         return Ok(response);
     }
 
@@ -142,20 +147,16 @@ fn is_health_endpoint(path: &str) -> bool {
 }
 
 /// Helper function to skip validation for health endpoints
-/// 
+///
 /// This function handles the common pattern of bypassing authentication for health endpoints:
 /// - Logs the provided debug message
 /// - Runs the next middleware/handler
 /// - Records the response status code in the tracing span
 /// - Returns the response
-/// 
+///
 /// This eliminates code duplication in middleware functions. Callers should check
 /// `is_health_endpoint()` before calling this helper, as it consumes `request` and `next`.
-async fn skip_health_endpoint(
-    request: Request,
-    next: Next,
-    debug_message: &str,
-) -> Response {
+async fn skip_health_endpoint(request: Request, next: Next, debug_message: &str) -> Response {
     tracing::debug!("{}", debug_message);
     let response = next.run(request).await;
     tracing::Span::current().record("status_code", response.status().as_u16());
@@ -196,7 +197,12 @@ async fn customer_id_validate(
     // Skip validation for health endpoints (load balancers don't send auth headers)
     let path = request.uri().path().to_string();
     if is_health_endpoint(&path) {
-        let response = skip_health_endpoint(request, next, "Skipping customer ID validation for health endpoint").await;
+        let response = skip_health_endpoint(
+            request,
+            next,
+            "Skipping customer ID validation for health endpoint",
+        )
+        .await;
         return Ok(response);
     }
 
@@ -547,7 +553,7 @@ mod tests {
             .route("/health", get(|| async { "ok" }))
             .layer(from_fn_with_state(config, oauth_validate));
         let app = router;
-        
+
         // Health endpoint should work without auth token
         let req = Request::builder()
             .uri("/health")
@@ -565,12 +571,12 @@ mod tests {
     async fn health_endpoint_bypasses_customer_id_validation() {
         let router = Router::new().route("/health", get(|| async { "ok" }));
         let app = enable_customer_id_validation(router);
-        
+
         // Set CUSTOMER_ID env var to enable validation
         unsafe {
             env::set_var("CUSTOMER_ID", "TestCustomer123");
         }
-        
+
         // Health endpoint should work without X-Company-ID header
         let req = Request::builder()
             .uri("/health")
@@ -582,7 +588,7 @@ mod tests {
             StatusCode::OK,
             "Health endpoint should bypass customer ID validation"
         );
-        
+
         // Cleanup
         unsafe {
             env::remove_var("CUSTOMER_ID");
@@ -597,19 +603,16 @@ mod tests {
             .route("/ready", get(|| async { "ok" }))
             .route("/live", get(|| async { "ok" }));
         let app = enable_customer_id_validation(router);
-        
+
         // Set CUSTOMER_ID env var to enable validation
         unsafe {
             env::set_var("CUSTOMER_ID", "TestCustomer123");
         }
-        
+
         // All health endpoint variants should work without X-Company-ID header
         let paths = ["/health", "/healthz", "/ready", "/live"];
         for path in paths {
-            let req = Request::builder()
-                .uri(path)
-                .body(Body::empty())
-                .unwrap();
+            let req = Request::builder().uri(path).body(Body::empty()).unwrap();
             let res = app.clone().oneshot(req).await.unwrap();
             assert_eq!(
                 res.status(),
@@ -618,7 +621,7 @@ mod tests {
                 path
             );
         }
-        
+
         // Cleanup
         unsafe {
             env::remove_var("CUSTOMER_ID");
