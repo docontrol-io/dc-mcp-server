@@ -436,11 +436,9 @@ headers:
         token_manager.token_expires_at = now
             .checked_sub(Duration::from_secs(3600))
             .or_else(|| now.checked_sub(Duration::from_secs(1)))
-            .or_else(|| {
-                // If even 1 second subtraction would overflow, use the earliest possible time
-                // This is extremely rare but can happen on Windows
-                Some(now)
-            });
+            // If even 1 second subtraction would overflow, use the earliest possible time
+            // This is extremely rare but can happen on Windows
+            .or(Some(now));
 
         // Token should be considered expired (or at least not in the future)
         if let Some(expires_at) = token_manager.token_expires_at {
