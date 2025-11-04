@@ -163,9 +163,7 @@ impl Starting {
 
         // Helper to enable customer ID validation (applied before auth)
         macro_rules! with_customer_id_validation {
-            ($router:expr) => {{
-                auth::enable_customer_id_validation($router)
-            }};
+            ($router:expr) => {{ auth::enable_customer_id_validation($router) }};
         }
 
         // Helper to enable auth
@@ -292,10 +290,7 @@ impl Starting {
                 });
 
                 // Apply customer ID validation and optionally wrap the router with auth, if enabled
-                let router = with_auth!(
-                    with_customer_id_validation!(router),
-                    auth
-                );
+                let router = with_auth!(with_customer_id_validation!(router), auth);
 
                 // Start up the SSE server
                 // Note: Until RMCP consolidates SSE with the same tower system as StreamableHTTP,

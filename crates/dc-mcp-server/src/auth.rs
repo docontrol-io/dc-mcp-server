@@ -137,7 +137,10 @@ pub fn enable_customer_id_validation(router: Router) -> Router {
     };
 
     if let Some(expected_customer_id) = customer_id_env {
-        tracing::info!("Customer ID validation enabled, expecting: {}", expected_customer_id);
+        tracing::info!(
+            "Customer ID validation enabled, expecting: {}",
+            expected_customer_id
+        );
         router.layer(axum::middleware::from_fn_with_state(
             expected_customer_id,
             customer_id_validate,
@@ -171,8 +174,11 @@ async fn customer_id_validate(
                 Ok(s) => s,
                 Err(_) => {
                     tracing::Span::current().record("reason", "invalid_x_company_id_header");
-                    tracing::Span::current().record("status_code", StatusCode::UNAUTHORIZED.as_u16());
-                    tracing::warn!("Request rejected: invalid X-Company-ID header value (not valid UTF-8)");
+                    tracing::Span::current()
+                        .record("status_code", StatusCode::UNAUTHORIZED.as_u16());
+                    tracing::warn!(
+                        "Request rejected: invalid X-Company-ID header value (not valid UTF-8)"
+                    );
                     return Err(StatusCode::UNAUTHORIZED);
                 }
             };
@@ -262,7 +268,10 @@ mod tests {
     fn test_router_with_customer_id(expected_customer_id: String) -> Router {
         Router::new()
             .route("/test", get(|| async { "ok" }))
-            .layer(from_fn_with_state(expected_customer_id, customer_id_validate))
+            .layer(from_fn_with_state(
+                expected_customer_id,
+                customer_id_validate,
+            ))
     }
 
     #[tokio::test]
@@ -295,10 +304,7 @@ mod tests {
     async fn missing_customer_id_header_returns_unauthorized() {
         let expected = "TestCustomer123".to_string();
         let app = test_router_with_customer_id(expected);
-        let req = Request::builder()
-            .uri("/test")
-            .body(Body::empty())
-            .unwrap();
+        let req = Request::builder().uri("/test").body(Body::empty()).unwrap();
         let res = app.oneshot(req).await.unwrap();
         assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
     }
@@ -307,7 +313,7 @@ mod tests {
     async fn customer_id_case_sensitive_comparison() {
         let expected = "TestCustomer123".to_string();
         let app = test_router_with_customer_id(expected);
-        
+
         // Test lowercase version (should fail)
         let req = Request::builder()
             .uri("/test")
@@ -331,7 +337,7 @@ mod tests {
     async fn customer_id_header_case_insensitive_name() {
         let expected = "TestCustomer123".to_string();
         let app = test_router_with_customer_id(expected);
-        
+
         // Test lowercase header name (should still work)
         let req = Request::builder()
             .uri("/test")
@@ -360,16 +366,16 @@ mod tests {
     async fn enable_customer_id_validation_with_env_var() {
         // Save original env var if it exists
         let original = env::var("CUSTOMER_ID").ok();
-        
+
         // Set CUSTOMER_ID env var BEFORE creating router
         unsafe {
             env::set_var("CUSTOMER_ID", "TestCustomer123");
         }
-        
+
         // Create router and enable validation (env var is read at this point)
         let router = Router::new().route("/test", get(|| async { "ok" }));
         let app = enable_customer_id_validation(router);
-        
+
         // Test with matching header
         let req = Request::builder()
             .uri("/test")
@@ -377,8 +383,12 @@ mod tests {
             .body(Body::empty())
             .unwrap();
         let res = app.clone().oneshot(req).await.unwrap();
-        assert_eq!(res.status(), StatusCode::OK, "Matching customer ID should return OK");
-        
+        assert_eq!(
+            res.status(),
+            StatusCode::OK,
+            "Matching customer ID should return OK"
+        );
+
         // Test with mismatched header (using same app instance)
         let req = Request::builder()
             .uri("/test")
@@ -386,8 +396,12 @@ mod tests {
             .body(Body::empty())
             .unwrap();
         let res = app.oneshot(req).await.unwrap();
-        assert_eq!(res.status(), StatusCode::UNAUTHORIZED, "Mismatched customer ID should return 401");
-        
+        assert_eq!(
+            res.status(),
+            StatusCode::UNAUTHORIZED,
+            "Mismatched customer ID should return 401"
+        );
+
         // Restore original env var
         unsafe {
             match original {
@@ -401,26 +415,30 @@ mod tests {
     async fn enable_customer_id_validation_without_env_var() {
         // Save original env var if it exists
         let original = env::var("CUSTOMER_ID").ok();
-        
+
         // Remove CUSTOMER_ID env var (ensure it's not set from previous tests)
         unsafe {
             env::remove_var("CUSTOMER_ID");
         }
-        
+
         // Verify it's actually removed
-        assert!(env::var("CUSTOMER_ID").is_err(), "CUSTOMER_ID should not be set");
-        
+        assert!(
+            env::var("CUSTOMER_ID").is_err(),
+            "CUSTOMER_ID should not be set"
+        );
+
         let router = Router::new().route("/test", get(|| async { "ok" }));
         let app = enable_customer_id_validation(router);
-        
+
         // Test without header (should pass since validation is disabled)
-        let req = Request::builder()
-            .uri("/test")
-            .body(Body::empty())
-            .unwrap();
+        let req = Request::builder().uri("/test").body(Body::empty()).unwrap();
         let res = app.oneshot(req).await.unwrap();
-        assert_eq!(res.status(), StatusCode::OK, "Should pass when CUSTOMER_ID env var is not set");
-        
+        assert_eq!(
+            res.status(),
+            StatusCode::OK,
+            "Should pass when CUSTOMER_ID env var is not set"
+        );
+
         // Restore original env var
         unsafe {
             match original {
@@ -434,26 +452,31 @@ mod tests {
     async fn enable_customer_id_validation_with_empty_env_var() {
         // Save original env var if it exists
         let original = env::var("CUSTOMER_ID").ok();
-        
+
         // Set empty CUSTOMER_ID env var (should disable validation)
         unsafe {
             env::set_var("CUSTOMER_ID", "");
         }
-        
+
         // Verify it's set to empty string
-        assert_eq!(env::var("CUSTOMER_ID").unwrap(), "", "CUSTOMER_ID should be empty string");
-        
+        assert_eq!(
+            env::var("CUSTOMER_ID").unwrap(),
+            "",
+            "CUSTOMER_ID should be empty string"
+        );
+
         let router = Router::new().route("/test", get(|| async { "ok" }));
         let app = enable_customer_id_validation(router);
-        
+
         // Test without header (should pass since validation is disabled for empty env var)
-        let req = Request::builder()
-            .uri("/test")
-            .body(Body::empty())
-            .unwrap();
+        let req = Request::builder().uri("/test").body(Body::empty()).unwrap();
         let res = app.oneshot(req).await.unwrap();
-        assert_eq!(res.status(), StatusCode::OK, "Should pass when CUSTOMER_ID env var is empty");
-        
+        assert_eq!(
+            res.status(),
+            StatusCode::OK,
+            "Should pass when CUSTOMER_ID env var is empty"
+        );
+
         // Restore original env var
         unsafe {
             match original {

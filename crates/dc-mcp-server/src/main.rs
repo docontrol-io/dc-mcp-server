@@ -47,7 +47,7 @@ async fn main() -> anyhow::Result<()> {
         println!("{}", env!("CARGO_PKG_VERSION"));
         return Ok(());
     }
-    
+
     let args = Args::parse();
     // Use config path as-is (already absolute from mcp.json args)
     // Don't canonicalize to avoid hanging on slow filesystems
@@ -60,8 +60,10 @@ async fn main() -> anyhow::Result<()> {
             let path = path.clone();
             match tokio::time::timeout(
                 tokio::time::Duration::from_secs(3),
-                tokio::task::spawn_blocking(move || runtime::read_config(path))
-            ).await {
+                tokio::task::spawn_blocking(move || runtime::read_config(path)),
+            )
+            .await
+            {
                 Ok(Ok(Ok(config))) => config,
                 Ok(Ok(Err(e))) => {
                     warn!("Config parsing error: {}", e);

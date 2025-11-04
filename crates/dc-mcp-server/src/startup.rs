@@ -37,16 +37,19 @@ pub async fn create_token_manager(
         tokio::task::spawn_blocking(move || {
             let cm = ConfigManager::new(config_path_clone);
             cm.verify_config()
-        })
+        }),
     )
     .await;
-    
+
     match verify_result {
         Ok(Ok(Ok(()))) => {
             info!("✅ Config verified");
         }
         Ok(Ok(Err(e))) => {
-            warn!("⚠️  Config verification failed: {} (will retry when needed)", e);
+            warn!(
+                "⚠️  Config verification failed: {} (will retry when needed)",
+                e
+            );
         }
         Ok(Err(_)) => {
             warn!("⚠️  Config verification task was cancelled (will retry when needed)");

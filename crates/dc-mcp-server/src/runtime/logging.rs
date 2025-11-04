@@ -81,10 +81,8 @@ impl Logging {
             Some(path) => {
                 // Try to create directory with timeout to prevent hanging on slow filesystems
                 // Use a simple approach: try once, if it fails or hangs, skip file logging
-                let create_result = std::panic::catch_unwind(|| {
-                    std::fs::create_dir_all(&path)
-                });
-                
+                let create_result = std::panic::catch_unwind(|| std::fs::create_dir_all(&path));
+
                 match create_result {
                     Ok(Ok(_)) => {
                         // Directory created, proceed with file appender
@@ -96,7 +94,8 @@ impl Logging {
                             .inspect_err(log_error!())
                             .ok()
                             .map(|appender| {
-                                let (non_blocking_appender, guard) = tracing_appender::non_blocking(appender);
+                                let (non_blocking_appender, guard) =
+                                    tracing_appender::non_blocking(appender);
                                 (
                                     BoxMakeWriter::new(non_blocking_appender),
                                     Some(guard),
@@ -104,13 +103,17 @@ impl Logging {
                                 )
                             })
                             .unwrap_or_else(|| {
-                                eprintln!("Log file appender setup failed - falling back to stderr");
+                                eprintln!(
+                                    "Log file appender setup failed - falling back to stderr"
+                                );
                                 (BoxMakeWriter::new(std::io::stderr), None, true)
                             })
                     }
                     Ok(Err(_)) | Err(_) => {
                         // Directory creation failed or panicked - fall back to stderr
-                        eprintln!("Log directory creation failed or timed out - falling back to stderr");
+                        eprintln!(
+                            "Log directory creation failed or timed out - falling back to stderr"
+                        );
                         (BoxMakeWriter::new(std::io::stderr), None, true)
                     }
                 }

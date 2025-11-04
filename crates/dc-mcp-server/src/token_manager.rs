@@ -135,7 +135,7 @@ impl TokenManager {
                 .post(&self.refresh_url)
                 .header("Content-Type", "application/json")
                 .json(&request_body)
-                .send()
+                .send(),
         )
         .await;
 
@@ -161,27 +161,24 @@ impl TokenManager {
 
         let status = response.status();
         // Add timeout for reading response body to prevent hanging
-        let response_text = tokio::time::timeout(
-            Duration::from_secs(10),
-            response.text()
-        )
-        .await
-        .map_err(|_| {
-            error!("Token refresh response read timed out after 10s");
-            McpError::new(
-                ErrorCode::INTERNAL_ERROR,
-                "Token refresh response read timed out after 10 seconds".to_string(),
-                None,
-            )
-        })?
-        .map_err(|e| {
-            error!("Failed to read token refresh response: {}", e);
-            McpError::new(
-                ErrorCode::INTERNAL_ERROR,
-                format!("Failed to read token refresh response: {}", e),
-                None,
-            )
-        })?;
+        let response_text = tokio::time::timeout(Duration::from_secs(10), response.text())
+            .await
+            .map_err(|_| {
+                error!("Token refresh response read timed out after 10s");
+                McpError::new(
+                    ErrorCode::INTERNAL_ERROR,
+                    "Token refresh response read timed out after 10 seconds".to_string(),
+                    None,
+                )
+            })?
+            .map_err(|e| {
+                error!("Failed to read token refresh response: {}", e);
+                McpError::new(
+                    ErrorCode::INTERNAL_ERROR,
+                    format!("Failed to read token refresh response: {}", e),
+                    None,
+                )
+            })?;
 
         debug!(
             "Token refresh response (status: {}): {}",
@@ -235,24 +232,29 @@ impl TokenManager {
             let config_manager = Arc::clone(config_manager);
             let write_result = tokio::time::timeout(
                 Duration::from_secs(5),
-                tokio::task::spawn_blocking(move || {
-                    config_manager.update_auth_token(&token)
-                })
+                tokio::task::spawn_blocking(move || config_manager.update_auth_token(&token)),
             )
             .await;
-            
+
             match write_result {
                 Ok(Ok(Ok(()))) => {
                     info!("✅ Refreshed token written to config file");
                 }
                 Ok(Ok(Err(e))) => {
-                    warn!("⚠️  Failed to write refreshed token to config file: {} (token still updated in memory)", e);
+                    warn!(
+                        "⚠️  Failed to write refreshed token to config file: {} (token still updated in memory)",
+                        e
+                    );
                 }
                 Ok(Err(_)) => {
-                    warn!("⚠️  Config file write task was cancelled (token still updated in memory)");
+                    warn!(
+                        "⚠️  Config file write task was cancelled (token still updated in memory)"
+                    );
                 }
                 Err(_) => {
-                    warn!("⚠️  Config file write timed out after 5s (token still updated in memory)");
+                    warn!(
+                        "⚠️  Config file write timed out after 5s (token still updated in memory)"
+                    );
                 }
             }
         }
