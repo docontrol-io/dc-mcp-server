@@ -93,10 +93,9 @@ async fn oauth_validate(
     next: Next,
 ) -> Result<Response, (StatusCode, TypedHeader<WwwAuthenticate>)> {
     // Skip validation for health endpoints (load balancers don't send auth headers)
-    if is_health_endpoint(request.uri().path()) {
-        tracing::debug!("Skipping OAuth validation for health endpoint");
-        let response = next.run(request).await;
-        tracing::Span::current().record("status_code", response.status().as_u16());
+    let path = request.uri().path().to_string();
+    if is_health_endpoint(&path) {
+        let response = skip_health_endpoint(request, next, "Skipping OAuth validation for health endpoint").await;
         return Ok(response);
     }
 
@@ -142,6 +141,27 @@ fn is_health_endpoint(path: &str) -> bool {
     path.starts_with("/health") || path == "/ready" || path == "/live"
 }
 
+/// Helper function to skip validation for health endpoints
+/// 
+/// This function handles the common pattern of bypassing authentication for health endpoints:
+/// - Logs the provided debug message
+/// - Runs the next middleware/handler
+/// - Records the response status code in the tracing span
+/// - Returns the response
+/// 
+/// This eliminates code duplication in middleware functions. Callers should check
+/// `is_health_endpoint()` before calling this helper, as it consumes `request` and `next`.
+async fn skip_health_endpoint(
+    request: Request,
+    next: Next,
+    debug_message: &str,
+) -> Response {
+    tracing::debug!("{}", debug_message);
+    let response = next.run(request).await;
+    tracing::Span::current().record("status_code", response.status().as_u16());
+    response
+}
+
 /// Enable customer ID validation middleware if CUSTOMER_ID environment variable is set
 /// This middleware validates that the X-Company-ID header matches the CUSTOMER_ID env var
 pub fn enable_customer_id_validation(router: Router) -> Router {
@@ -174,10 +194,9 @@ async fn customer_id_validate(
     next: Next,
 ) -> Result<Response, StatusCode> {
     // Skip validation for health endpoints (load balancers don't send auth headers)
-    if is_health_endpoint(request.uri().path()) {
-        tracing::debug!("Skipping customer ID validation for health endpoint");
-        let response = next.run(request).await;
-        tracing::Span::current().record("status_code", response.status().as_u16());
+    let path = request.uri().path().to_string();
+    if is_health_endpoint(&path) {
+        let response = skip_health_endpoint(request, next, "Skipping customer ID validation for health endpoint").await;
         return Ok(response);
     }
 
