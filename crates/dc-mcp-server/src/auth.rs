@@ -92,6 +92,14 @@ async fn oauth_validate(
     mut request: Request,
     next: Next,
 ) -> Result<Response, (StatusCode, TypedHeader<WwwAuthenticate>)> {
+    // Skip validation for health endpoints (load balancers don't send auth headers)
+    if is_health_endpoint(request.uri().path()) {
+        tracing::debug!("Skipping OAuth validation for health endpoint");
+        let response = next.run(request).await;
+        tracing::Span::current().record("status_code", response.status().as_u16());
+        return Ok(response);
+    }
+
     // Consolidated unauthorized error for use with any fallible step in this process
     let unauthorized_error = || {
         let mut resource = auth_config.resource.clone();
@@ -127,6 +135,13 @@ async fn oauth_validate(
     Ok(response)
 }
 
+/// Check if a request path is a health endpoint (should bypass auth)
+fn is_health_endpoint(path: &str) -> bool {
+    // Check for common health check patterns
+    // Matches /health, /healthz, /health?ready, /health?live, etc.
+    path.starts_with("/health") || path == "/ready" || path == "/live"
+}
+
 /// Enable customer ID validation middleware if CUSTOMER_ID environment variable is set
 /// This middleware validates that the X-Company-ID header matches the CUSTOMER_ID env var
 pub fn enable_customer_id_validation(router: Router) -> Router {
@@ -158,6 +173,14 @@ async fn customer_id_validate(
     request: Request,
     next: Next,
 ) -> Result<Response, StatusCode> {
+    // Skip validation for health endpoints (load balancers don't send auth headers)
+    if is_health_endpoint(request.uri().path()) {
+        tracing::debug!("Skipping customer ID validation for health endpoint");
+        let response = next.run(request).await;
+        tracing::Span::current().record("status_code", response.status().as_u16());
+        return Ok(response);
+    }
+
     // Extract X-Company-ID header (HTTP header names are case-insensitive)
     let customer_id_header = request.headers().get("x-company-id");
 
@@ -495,6 +518,91 @@ mod tests {
                 Some(val) => env::set_var("CUSTOMER_ID", val),
                 None => env::remove_var("CUSTOMER_ID"),
             }
+        }
+    }
+
+    #[tokio::test]
+    async fn health_endpoint_bypasses_oauth_validation() {
+        let config = test_config();
+        let router = Router::new()
+            .route("/health", get(|| async { "ok" }))
+            .layer(from_fn_with_state(config, oauth_validate));
+        let app = router;
+        
+        // Health endpoint should work without auth token
+        let req = Request::builder()
+            .uri("/health")
+            .body(Body::empty())
+            .unwrap();
+        let res = app.oneshot(req).await.unwrap();
+        assert_eq!(
+            res.status(),
+            StatusCode::OK,
+            "Health endpoint should bypass OAuth validation"
+        );
+    }
+
+    #[tokio::test]
+    async fn health_endpoint_bypasses_customer_id_validation() {
+        let router = Router::new().route("/health", get(|| async { "ok" }));
+        let app = enable_customer_id_validation(router);
+        
+        // Set CUSTOMER_ID env var to enable validation
+        unsafe {
+            env::set_var("CUSTOMER_ID", "TestCustomer123");
+        }
+        
+        // Health endpoint should work without X-Company-ID header
+        let req = Request::builder()
+            .uri("/health")
+            .body(Body::empty())
+            .unwrap();
+        let res = app.oneshot(req).await.unwrap();
+        assert_eq!(
+            res.status(),
+            StatusCode::OK,
+            "Health endpoint should bypass customer ID validation"
+        );
+        
+        // Cleanup
+        unsafe {
+            env::remove_var("CUSTOMER_ID");
+        }
+    }
+
+    #[tokio::test]
+    async fn health_endpoint_variants_bypass_validation() {
+        let router = Router::new()
+            .route("/health", get(|| async { "ok" }))
+            .route("/healthz", get(|| async { "ok" }))
+            .route("/ready", get(|| async { "ok" }))
+            .route("/live", get(|| async { "ok" }));
+        let app = enable_customer_id_validation(router);
+        
+        // Set CUSTOMER_ID env var to enable validation
+        unsafe {
+            env::set_var("CUSTOMER_ID", "TestCustomer123");
+        }
+        
+        // All health endpoint variants should work without X-Company-ID header
+        let paths = ["/health", "/healthz", "/ready", "/live"];
+        for path in paths {
+            let req = Request::builder()
+                .uri(path)
+                .body(Body::empty())
+                .unwrap();
+            let res = app.clone().oneshot(req).await.unwrap();
+            assert_eq!(
+                res.status(),
+                StatusCode::OK,
+                "Health endpoint variant {} should bypass customer ID validation",
+                path
+            );
+        }
+        
+        // Cleanup
+        unsafe {
+            env::remove_var("CUSTOMER_ID");
         }
     }
 }
