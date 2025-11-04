@@ -17,6 +17,7 @@ use tower_http::trace::TraceLayer;
 use tracing::{Instrument as _, debug, error, info, trace};
 
 use crate::{
+    auth,
     errors::ServerError,
     explorer::Explorer,
     health::HealthCheck,
@@ -160,6 +161,11 @@ impl Starting {
             token_manager: self.config.token_manager.clone(),
         };
 
+        // Helper to enable customer ID validation (applied before auth)
+        macro_rules! with_customer_id_validation {
+            ($router:expr) => {{ auth::enable_customer_id_validation($router) }};
+        }
+
         // Helper to enable auth
         macro_rules! with_auth {
             ($router:expr, $auth:ident) => {{
@@ -210,7 +216,12 @@ impl Starting {
                     },
                 );
                 let mut router = with_cors!(
-                    with_auth!(axum::Router::new().nest_service("/mcp", service), auth),
+                    with_auth!(
+                        with_customer_id_validation!(
+                            axum::Router::new().nest_service("/mcp", service)
+                        ),
+                        auth
+                    ),
                     self.config.cors
                 )
                 .layer(HttpMetricsLayerBuilder::new().build())
@@ -278,8 +289,8 @@ impl Starting {
                     sse_keep_alive: None,
                 });
 
-                // Optionally wrap the router with auth, if enabled
-                let router = with_auth!(router, auth);
+                // Apply customer ID validation and optionally wrap the router with auth, if enabled
+                let router = with_auth!(with_customer_id_validation!(router), auth);
 
                 // Start up the SSE server
                 // Note: Until RMCP consolidates SSE with the same tower system as StreamableHTTP,

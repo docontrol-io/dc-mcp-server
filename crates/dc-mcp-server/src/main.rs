@@ -39,12 +39,46 @@ struct Args {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    // Handle version flag early, before any initialization (especially token manager)
+    // to avoid hanging on network calls or config reading
+    // Check this before Args::parse() to ensure we exit immediately
+    let args_vec: Vec<String> = std::env::args().collect();
+    if args_vec.iter().any(|arg| arg == "--version" || arg == "-V") {
+        println!("{}", env!("CARGO_PKG_VERSION"));
+        return Ok(());
+    }
+
     let args = Args::parse();
+    // Use config path as-is (already absolute from mcp.json args)
+    // Don't canonicalize to avoid hanging on slow filesystems
     let config_path = args.config.clone();
 
     // Read config for initial setup (telemetry)
+    // Use spawn_blocking with timeout to prevent hanging on slow file systems or network mounts
     let config: runtime::Config = match config_path.clone() {
-        Some(ref path) => runtime::read_config(path.clone())?,
+        Some(ref path) => {
+            let path = path.clone();
+            match tokio::time::timeout(
+                tokio::time::Duration::from_secs(3),
+                tokio::task::spawn_blocking(move || runtime::read_config(path)),
+            )
+            .await
+            {
+                Ok(Ok(Ok(config))) => config,
+                Ok(Ok(Err(e))) => {
+                    warn!("Config parsing error: {}", e);
+                    return Err(anyhow::anyhow!("Config parsing error: {}", e));
+                }
+                Ok(Err(e)) => {
+                    warn!("Failed to read config: {}", e);
+                    return Err(anyhow::anyhow!("Failed to read config: {}", e));
+                }
+                Err(_) => {
+                    warn!("Config file read timed out after 3s, using defaults");
+                    runtime::read_config_from_env().unwrap_or_default()
+                }
+            }
+        }
         None => runtime::read_config_from_env().unwrap_or_default(),
     };
 
@@ -77,7 +111,9 @@ async fn main() -> anyhow::Result<()> {
                     refresh_url,
                     endpoint,
                     Arc::clone(&shared_headers),
-                ) {
+                )
+                .await
+                {
                     Ok(tm) => {
                         info!("✅ Token refresh initialization complete");
                         Some(Arc::new(Mutex::new(tm)))

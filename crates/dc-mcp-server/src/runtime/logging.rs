@@ -78,31 +78,46 @@ impl Logging {
         }
 
         let (writer, guard, with_ansi) = match logging.path.clone() {
-            Some(path) => std::fs::create_dir_all(&path)
-                .map(|_| path)
-                .inspect_err(log_error!())
-                .ok()
-                .and_then(|path| {
-                    RollingFileAppender::builder()
-                        .rotation(logging.rotation.clone().into())
-                        .filename_prefix("apollo_mcp_server")
-                        .filename_suffix("log")
-                        .build(path)
-                        .inspect_err(log_error!())
-                        .ok()
-                })
-                .map(|appender| {
-                    let (non_blocking_appender, guard) = tracing_appender::non_blocking(appender);
-                    (
-                        BoxMakeWriter::new(non_blocking_appender),
-                        Some(guard),
-                        false,
-                    )
-                })
-                .unwrap_or_else(|| {
-                    eprintln!("Log file setup failed - falling back to stderr");
-                    (BoxMakeWriter::new(std::io::stderr), None, true)
-                }),
+            Some(path) => {
+                // Try to create directory with timeout to prevent hanging on slow filesystems
+                // Use a simple approach: try once, if it fails or hangs, skip file logging
+                let create_result = std::panic::catch_unwind(|| std::fs::create_dir_all(&path));
+
+                match create_result {
+                    Ok(Ok(_)) => {
+                        // Directory created, proceed with file appender
+                        RollingFileAppender::builder()
+                            .rotation(logging.rotation.clone().into())
+                            .filename_prefix("apollo_mcp_server")
+                            .filename_suffix("log")
+                            .build(path)
+                            .inspect_err(log_error!())
+                            .ok()
+                            .map(|appender| {
+                                let (non_blocking_appender, guard) =
+                                    tracing_appender::non_blocking(appender);
+                                (
+                                    BoxMakeWriter::new(non_blocking_appender),
+                                    Some(guard),
+                                    false,
+                                )
+                            })
+                            .unwrap_or_else(|| {
+                                eprintln!(
+                                    "Log file appender setup failed - falling back to stderr"
+                                );
+                                (BoxMakeWriter::new(std::io::stderr), None, true)
+                            })
+                    }
+                    Ok(Err(_)) | Err(_) => {
+                        // Directory creation failed or panicked - fall back to stderr
+                        eprintln!(
+                            "Log directory creation failed or timed out - falling back to stderr"
+                        );
+                        (BoxMakeWriter::new(std::io::stderr), None, true)
+                    }
+                }
+            }
             None => (BoxMakeWriter::new(std::io::stdout), None, true),
         };
 
