@@ -486,9 +486,23 @@ mod tests {
             "CUSTOMER_ID should not be set"
         );
 
-        // Create router and enable validation while holding the mutex
-        // to prevent race conditions with other tests
+        // Create router first
         let router = Router::new().route("/test", get(|| async { "ok" }));
+        
+        // Remove CUSTOMER_ID one more time right before calling enable_customer_id_validation
+        // to minimize the window where another test could set it
+        // (even though we hold the mutex, this is a defensive measure)
+        unsafe {
+            env::remove_var("CUSTOMER_ID");
+        }
+        
+        // Verify it's still not set right before the call
+        assert!(
+            env::var("CUSTOMER_ID").is_err(),
+            "CUSTOMER_ID should not be set right before enable_customer_id_validation"
+        );
+        
+        // Now enable validation - this reads the env var synchronously
         let app = enable_customer_id_validation(router);
 
         // Test without header (should pass since validation is disabled)
