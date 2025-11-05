@@ -407,7 +407,6 @@ All queries and mutations from the DoControl GraphQL API are automatically avail
 Download the latest release for your platform from the [releases page](https://github.com/docontrol-io/dc-mcp-server/releases):
 - **Linux**: `dc-mcp-server-linux-x86_64.tar.gz`
 - **macOS**: `dc-mcp-server-macos-aarch64.tar.gz`
-- **Windows**: `dc-mcp-server-windows-x86_64.tar.gz`
 
 ### From Source
 
