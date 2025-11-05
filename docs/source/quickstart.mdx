@@ -41,25 +41,9 @@ You can start your MCP server locally with `rover dev`.
 
 1. Choose the environment-specific command to load environment variables from the provided `.env` file and start the MCP server.
 
-    <Tabs>
-
-        <Tab label="Linux / MacOS">
-        
-        ```terminal showLineNumbers=false
-        set -a && source .env && set +a && rover dev --supergraph-config supergraph.yaml --mcp .apollo/mcp.local.yaml
-        ```
-
-        </Tab>
-
-        <Tab label="Windows Powershell">
-
-        ```terminal showLineNumbers=false
-        Get-Content .env | ForEach-Object { $name, $value = $_.split('=',2); [System.Environment]::SetEnvironmentVariable($name, $value) }
-        rover dev --supergraph-config supergraph.yaml --mcp .apollo/mcp.local.yaml
-        ```
-        </Tab>
-        
-    </Tabs>
+    ```terminal showLineNumbers=false
+    set -a && source .env && set +a && rover dev --supergraph-config supergraph.yaml --mcp .apollo/mcp.local.yaml
+    ```
 
 1. You should see some output indicating that the GraphQL server is running at `http://localhost:4000` and the MCP server is running at `http://127.0.0.1:5050`.
 
@@ -82,7 +66,6 @@ Apollo MCP Server works with any MCP-compatible client. Choose your favorite cli
 Open the `claude_desktop_config.json` file in one of the following paths:
 
 - Mac OS: `~/Library/Application\ Support/Claude/claude_desktop_config.json`
-- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
 - Linux: `~/.config/Claude/claude_desktop_config.json`
 
 Copy the configuration:

@@ -30,10 +30,6 @@ jobs:
             artifact_name: dc-mcp-server-macos-aarch64
             binary_path: target/release/dc-mcp-server
             target: ""
-          #- os: windows-latest
-          #  artifact_name: dc-mcp-server-windows-x86_64
-          #  binary_path: target/release/dc-mcp-server.exe
-          #  target: ""
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -91,8 +87,7 @@ jobs:
           cargo clippy --all-targets --all-features -- -D warnings
           cargo fmt --all -- --check
 
-      - name: Create release package (Unix)
-        if: runner.os != 'Windows'
+      - name: Create release package
         shell: bash
         run: |
           RELEASE_DIR="release"
@@ -117,6 +112,12 @@ jobs:
           # Create tar.gz archive
           tar -czvf "${ARTIFACT_NAME}.tar.gz" -C "$RELEASE_DIR" "$ARTIFACT_NAME"
 
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_name }}.tar.gz
+
   release:
     name: Create Release
     needs: build
@@ -134,7 +135,6 @@ jobs:
         run: |
           mkdir -p release-assets
           find artifacts -name "*.tar.gz" -exec cp {} release-assets/ \;
-          find artifacts -name "*.zip" -exec cp {} release-assets/ \;
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
